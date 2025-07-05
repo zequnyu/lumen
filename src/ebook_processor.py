@@ -7,7 +7,6 @@ from ebooklib import epub
 import PyPDF2
 from bs4 import BeautifulSoup
 from sentence_transformers import SentenceTransformer
-import numpy as np
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -87,7 +86,7 @@ class EbookProcessor:
             logger.warning(f"Unsupported file format: {file_extension}")
             return None
     
-    def create_embeddings(self, text: str) -> np.ndarray:
+    def create_embeddings(self, text: str):
         """Create embeddings for text using SentenceTransformer"""
         return self.embedding_model.encode(text)
     
