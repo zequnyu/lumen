@@ -1,8 +1,10 @@
 import os
 import logging
 import warnings
+import argparse
+import json
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Set
 import ebooklib
 from ebooklib import epub
 import PyPDF2
@@ -16,12 +18,33 @@ logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 class EbookProcessor:
-    def __init__(self, elasticsearch_url: str = None, index_name: str = "ebooks"):
+    def __init__(self, elasticsearch_url: str = None, index_name: str = "ebooks", index_mode: str = "new"):
         self.elasticsearch_url = elasticsearch_url or os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
         self.index_name = index_name
+        self.index_mode = index_mode
         self.chunk_size = 1000
         self.chunk_overlap = 200
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.indexed_books_file = Path(__file__).parent.parent / "indexed_books.json"
+        
+    def load_indexed_books(self) -> Set[str]:
+        """Load the set of previously indexed books"""
+        if self.indexed_books_file.exists():
+            try:
+                with open(self.indexed_books_file, 'r') as f:
+                    return set(json.load(f))
+            except Exception as e:
+                logger.error(f"Error loading indexed books: {str(e)}")
+                return set()
+        return set()
+    
+    def save_indexed_books(self, indexed_books: Set[str]):
+        """Save the set of indexed books"""
+        try:
+            with open(self.indexed_books_file, 'w') as f:
+                json.dump(list(indexed_books), f, indent=2)
+        except Exception as e:
+            logger.error(f"Error saving indexed books: {str(e)}")
         
     def extract_text_from_epub(self, file_path: str) -> Dict[str, Any]:
         """Extract text content from EPUB file"""
@@ -187,8 +210,29 @@ class EbookProcessor:
         for extension in ['*.epub', '*.pdf']:
             ebook_files.extend(directory.glob(extension))
         
+        # Load previously indexed books
+        indexed_books = self.load_indexed_books()
+        print(f"🔍 Debug: Loaded {len(indexed_books)} previously indexed books")
+        print(f"🔍 Debug: Index mode = {self.index_mode}")
+        
+        if self.index_mode == "new":
+            # Filter out already indexed books
+            original_count = len(ebook_files)
+            if indexed_books:
+                print(f"🔍 Debug: Sample indexed book path: {list(indexed_books)[0]}")
+            if ebook_files:
+                print(f"🔍 Debug: Sample current file path: {str(ebook_files[0])}")
+            ebook_files = [f for f in ebook_files if str(f) not in indexed_books]
+            print(f"🔍 Debug: Filtered {original_count} files to {len(ebook_files)} new files")
+        # In 'all' mode, process all files regardless of indexing status
+        
         total_books = len(ebook_files)
-        print(f"📚 Found {total_books} ebook files to process")
+        if self.index_mode == "new":
+            all_files = len(list(directory.glob('*.epub')) + list(directory.glob('*.pdf')))
+            skipped = all_files - total_books
+            print(f"📚 Found {total_books} new ebook files to process ({skipped} already indexed)")
+        else:
+            print(f"📚 Found {total_books} ebook files to process (all mode - reprocessing everything)")
         
         for idx, file_path in enumerate(ebook_files, 1):
             try:
@@ -216,6 +260,8 @@ class EbookProcessor:
                         'file_path': str(file_path),
                         'chunks': len(documents)
                     })
+                    # Track this book as indexed
+                    indexed_books.add(str(file_path))
                     print(f" ✅ Completed")
                 else:
                     results['failed'] += 1
@@ -226,12 +272,21 @@ class EbookProcessor:
                 results['failed'] += 1
                 print(f" ❌ Error: {str(e)}")
         
+        # Save the updated list of indexed books
+        self.save_indexed_books(indexed_books)
+        
         print(f"\n\n🎉 Processing complete: {results['processed']} successful, {results['failed']} failed")
         return results
 
 def main():
     """Main function to process ebooks"""
-    processor = EbookProcessor()
+    parser = argparse.ArgumentParser(description="Process ebook files for indexing")
+    parser.add_argument("--mode", choices=["new", "all"], default="new",
+                        help="Indexing mode: 'new' to index only new books, 'all' to index all books")
+    
+    args = parser.parse_args()
+    
+    processor = EbookProcessor(index_mode=args.mode)
     project_root = Path(__file__).parent.parent
     ebooks_dir = project_root / "ebooks"
     

@@ -33,6 +33,7 @@ services:
       - ./ebooks:/app/ebooks
       - ./data:/app/data
       - ./src:/app/src
+      - .:/app
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - PYTHONPATH=/app
