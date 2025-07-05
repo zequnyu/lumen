@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: ebook-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - cluster.name=ebook-cluster
+      - node.name=ebook-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - ebook-network
+
+  ebook-processor:
+    build: .
+    container_name: ebook-processor
+    depends_on:
+      - elasticsearch
+    volumes:
+      - ./ebooks:/app/ebooks
+      - ./data:/app/data
+      - ./src:/app/src
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - PYTHONPATH=/app
+    networks:
+      - ebook-network
+    command: tail -f /dev/null
+
+  mcp-server:
+    build: .
+    container_name: ebook-mcp-server
+    depends_on:
+      - elasticsearch
+    ports:
+      - "8000:8000"
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - PYTHONPATH=/app
+    networks:
+      - ebook-network
+    command: python src/mcp_server.py
+
+volumes:
+  elasticsearch_data:
+    driver: local
+
+networks:
+  ebook-network:
+    driver: bridge
