@@ -1,5 +1,6 @@
 import os
 import logging
+import warnings
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import ebooklib
@@ -7,6 +8,9 @@ from ebooklib import epub
 import PyPDF2
 from bs4 import BeautifulSoup
 from sentence_transformers import SentenceTransformer
+
+# Suppress specific ebooklib FutureWarning that we can't fix (library bug)
+warnings.filterwarnings('ignore', message='This search incorrectly ignores the root element*')
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -22,7 +26,7 @@ class EbookProcessor:
     def extract_text_from_epub(self, file_path: str) -> Dict[str, Any]:
         """Extract text content from EPUB file"""
         try:
-            book = epub.read_epub(file_path)
+            book = epub.read_epub(file_path, options={'ignore_ncx': True})
             title = book.get_metadata('DC', 'title')[0][0] if book.get_metadata('DC', 'title') else "Unknown"
             author = book.get_metadata('DC', 'creator')[0][0] if book.get_metadata('DC', 'creator') else "Unknown"
             
@@ -158,7 +162,7 @@ class EbookProcessor:
             
             # Store documents with embeddings
             for i, doc in enumerate(documents):
-                print(f"\r{current_book}/{total_books} books | {i+1}/{len(documents)} chunks", end='', flush=True)
+                print(f"\r📊 {current_book}/{total_books} books | 📄 {i+1}/{len(documents)} chunks", end='', flush=True)
                 embeddings = self.create_embeddings(doc['content'])
                 doc_body = {"embeddings": embeddings.tolist(), **doc}
                 es.index(index=self.index_name, document=doc_body)
@@ -184,11 +188,11 @@ class EbookProcessor:
             ebook_files.extend(directory.glob(extension))
         
         total_books = len(ebook_files)
-        print(f"Found {total_books} ebook files to process")
+        print(f"📚 Found {total_books} ebook files to process")
         
         for idx, file_path in enumerate(ebook_files, 1):
             try:
-                print(f"\nProcessing book {idx}/{total_books}: {file_path.name}")
+                print(f"\n📖 Processing book {idx}/{total_books}: {file_path.name}")
                 
                 # Extract text from ebook
                 book_data = self.process_ebook(str(file_path))
@@ -212,17 +216,17 @@ class EbookProcessor:
                         'file_path': str(file_path),
                         'chunks': len(documents)
                     })
-                    print(f" ✓ Completed")
+                    print(f" ✅ Completed")
                 else:
                     results['failed'] += 1
-                    print(f" ✗ Failed")
+                    print(f" ❌ Failed")
                     
             except Exception as e:
                 logger.error(f"Error processing {file_path}: {str(e)}")
                 results['failed'] += 1
-                print(f" ✗ Error: {str(e)}")
+                print(f" ❌ Error: {str(e)}")
         
-        print(f"\n\nProcessing complete: {results['processed']} successful, {results['failed']} failed")
+        print(f"\n\n🎉 Processing complete: {results['processed']} successful, {results['failed']} failed")
         return results
 
 def main():
@@ -234,7 +238,7 @@ def main():
     if ebooks_dir.exists():
         processor.process_directory(str(ebooks_dir))
     else:
-        print(f"Ebooks directory not found: {ebooks_dir}")
+        print(f"❌ Ebooks directory not found: {ebooks_dir}")
 
 if __name__ == "__main__":
     main()
