@@ -177,14 +177,16 @@ Desktop.ini
 
 # Claude Code specific
 .claude/settings.local.json
+.claude/
 
 # Elasticsearch data
 data/
 
-# Large ebook files (optional - comment out if you want to track them)
-# ebooks/*.epub
-# ebooks/*.pdf
-# ebooks/*.mobi
+# Ebook files and directory (large binary files, often copyrighted)
+ebooks/
+*.epub
+*.pdf
+*.mobi
 
 # Temporary test files
 test_output.txt
