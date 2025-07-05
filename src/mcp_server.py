@@ -19,13 +19,38 @@ class EbookMCPServer:
         self.elasticsearch_url = elasticsearch_url or os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
         self.index_name = index_name
         self.es_client = Elasticsearch([self.elasticsearch_url])
-        self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.use_gemini = os.getenv("GEMINI_API_KEY") is not None
+        self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2') if not self.use_gemini else None
         
+    def create_embeddings(self, text: str):
+        """Create embeddings for text using Gemini or SentenceTransformer"""
+        if self.use_gemini:
+            try:
+                import google.generativeai as genai
+                api_key = os.getenv("GEMINI_API_KEY")
+                if not api_key:
+                    raise ValueError("GEMINI_API_KEY environment variable not set")
+                
+                genai.configure(api_key=api_key)
+                
+                result = genai.embed_content(
+                    model="models/text-embedding-004",
+                    content=text
+                )
+                return result['embedding']
+            except Exception as e:
+                logger.error(f"Gemini embedding failed: {e}")
+                if self.embedding_model is None:
+                    self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+                return self.embedding_model.encode(text).tolist()
+        else:
+            return self.embedding_model.encode(text).tolist()
+
     async def search_ebooks(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
         """Search for relevant ebook content using vector similarity"""
         try:
             # Create query embedding
-            query_embedding = self.embedding_model.encode([query])[0].tolist()
+            query_embedding = self.create_embeddings(query)
             
             # Elasticsearch query
             search_query = {

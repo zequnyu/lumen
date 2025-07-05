@@ -18,13 +18,14 @@ logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 class EbookProcessor:
-    def __init__(self, elasticsearch_url: str = None, index_name: str = "ebooks", index_mode: str = "new"):
+    def __init__(self, elasticsearch_url: str = None, index_name: str = "ebooks", index_mode: str = "new", use_gemini: bool = False):
         self.elasticsearch_url = elasticsearch_url or os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
         self.index_name = index_name
         self.index_mode = index_mode
         self.chunk_size = 1000
         self.chunk_overlap = 200
-        self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.use_gemini = use_gemini or os.getenv("GEMINI_API_KEY") is not None
+        self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2') if not self.use_gemini else None
         self.indexed_books_file = Path(__file__).parent.parent / "indexed_books.json"
         
     def load_indexed_books(self) -> Set[str]:
@@ -114,8 +115,28 @@ class EbookProcessor:
             return None
     
     def create_embeddings(self, text: str):
-        """Create embeddings for text using SentenceTransformer"""
-        return self.embedding_model.encode(text)
+        """Create embeddings for text using Gemini or SentenceTransformer"""
+        if self.use_gemini:
+            try:
+                import google.generativeai as genai
+                api_key = os.getenv("GEMINI_API_KEY")
+                if not api_key:
+                    raise ValueError("GEMINI_API_KEY environment variable not set")
+                
+                genai.configure(api_key=api_key)
+                
+                result = genai.embed_content(
+                    model="models/text-embedding-004",
+                    content=text
+                )
+                return result['embedding']
+            except Exception as e:
+                logger.error(f"Gemini embedding failed: {e}")
+                if self.embedding_model is None:
+                    self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+                return self.embedding_model.encode(text)
+        else:
+            return self.embedding_model.encode(text)
     
     def split_text_into_chunks(self, book_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Split book content into chunks for vector storage"""
@@ -178,7 +199,7 @@ class EbookProcessor:
                         "file_type": {"type": "keyword"},
                         "chunk_id": {"type": "integer"},
                         "total_chunks": {"type": "integer"},
-                        "embeddings": {"type": "dense_vector", "dims": 384}
+                        "embeddings": {"type": "dense_vector", "dims": 768 if self.use_gemini else 384}
                     }
                 }
                 es.indices.create(index=self.index_name, mappings=mapping)
@@ -187,7 +208,10 @@ class EbookProcessor:
             for i, doc in enumerate(documents):
                 print(f"\r📊 {current_book}/{total_books} books | 📄 {i+1}/{len(documents)} chunks", end='', flush=True)
                 embeddings = self.create_embeddings(doc['content'])
-                doc_body = {"embeddings": embeddings.tolist(), **doc}
+                if self.use_gemini:
+                    doc_body = {"embeddings": embeddings, **doc}
+                else:
+                    doc_body = {"embeddings": embeddings.tolist(), **doc}
                 es.index(index=self.index_name, document=doc_body)
             
             return True
@@ -283,10 +307,12 @@ def main():
     parser = argparse.ArgumentParser(description="Process ebook files for indexing")
     parser.add_argument("--mode", choices=["new", "all"], default="new",
                         help="Indexing mode: 'new' to index only new books, 'all' to index all books")
+    parser.add_argument("--use-gemini", action="store_true",
+                        help="Use Gemini embedding API instead of local model")
     
     args = parser.parse_args()
     
-    processor = EbookProcessor(index_mode=args.mode)
+    processor = EbookProcessor(index_mode=args.mode, use_gemini=args.use_gemini)
     project_root = Path(__file__).parent.parent
     ebooks_dir = project_root / "ebooks"
     
