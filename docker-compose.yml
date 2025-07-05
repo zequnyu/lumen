@@ -26,7 +26,6 @@ services:
 
   ebook-processor:
     build: .
-    container_name: ebook-processor
     depends_on:
       - elasticsearch
     volumes:
@@ -39,7 +38,6 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     networks:
       - ebook-network
-    command: tail -f /dev/null
 
   mcp-server:
     build: .

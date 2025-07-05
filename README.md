@@ -5,8 +5,10 @@ Query your ebook collection using Claude Desktop through the Model Context Proto
 ## Features
 
 - **Semantic Search**: Search across your entire ebook collection using natural language queries
-- **Google Gemini Integration**: Uses Google Gemini embeddings for superior search quality
-- **Local Model Fallback**: Falls back to local SentenceTransformer models when Gemini is unavailable
+- **Dual Embedding Models**: Choose between Google Gemini (768d) or local SentenceTransformers (384d)
+- **Automatic Index Separation**: Gemini and local embeddings use separate Elasticsearch indices
+- **Smart Book Tracking**: Avoids reprocessing books already indexed by either model
+- **Automatic Cleanup**: Scripts handle complete lifecycle with container cleanup
 - **Docker-based**: Runs in Docker containers for easy deployment and dependency management
 - **Elasticsearch Backend**: Fast, scalable search with Elasticsearch
 - **MCP Integration**: Seamlessly integrates with Claude Desktop
@@ -79,29 +81,50 @@ If you need to restart the MCP server:
 cp new-book.epub ebooks/
 ```
 
-### Step 2: Start Docker Services (if not already running)
+### Step 2: Index the New Book
 ```bash
-# Make sure Elasticsearch is running
-docker-compose up -d elasticsearch
+# Index with automatic cleanup (default: local embeddings)
+./scripts/index_books.sh
+
+# Or use Gemini embeddings for better quality
+./scripts/index_books.sh --model gemini
 ```
 
-### Step 3: Process the New Book
-```bash
-# This processes ALL books (existing + new ones)
-docker-compose run --rm ebook-processor python src/ebook_processor.py
-```
-
-### Step 4: Restart MCP Server
+### Step 3: Restart MCP Server
 ```bash
 # Restart the server to pick up new books
 ./scripts/run_mcp_server.sh
 ```
 
-### Step 5: Verify in Claude Desktop
+### Step 4: Verify in Claude Desktop
 - The new books should now appear when you ask Claude to list available books
 - You can search across all books including the new ones
 
 **Important**: Always restart the MCP server after adding new books for them to be available in Claude Desktop.
+
+## Embedding Models
+
+The system supports two embedding models that can co-exist:
+
+### Local Embeddings (Default)
+- **Model**: `all-MiniLM-L6-v2` (SentenceTransformers)
+- **Dimensions**: 384
+- **Index**: `ebooks_local`
+- **Pros**: No API key required, fast, offline
+- **Cons**: Lower quality semantic understanding
+
+### Gemini Embeddings
+- **Model**: `text-embedding-004` (Google Gemini)
+- **Dimensions**: 768  
+- **Index**: `ebooks_gemini`
+- **Pros**: Superior semantic understanding, better search quality
+- **Cons**: Requires API key and internet connection
+
+### Smart Book Tracking
+- Books are tracked in `indexed_books.json` with metadata about which model was used
+- Once a book is indexed by either model, it won't be reprocessed by the other
+- Each model maintains its own Elasticsearch index with the appropriate dimensions
+- You can query either index depending on your search quality needs
 
 ## Configuration
 
@@ -158,6 +181,18 @@ python tests/integration/verify_gemini.py
 
 ## Utility Scripts
 
+### Index Books
+```bash
+# Index books with automatic cleanup (default: local embeddings)
+./scripts/index_books.sh
+
+# Index with Gemini embeddings
+./scripts/index_books.sh --model gemini
+
+# Force reindex all books
+./scripts/index_books.sh --mode all
+```
+
 ### Process Single Book
 ```bash
 # Process a specific book for testing
@@ -197,7 +232,7 @@ docker-compose logs ebook-processor
 
 **Books Not Appearing**
 1. Ensure books are in the `ebooks/` directory
-2. Re-run the book processing: `docker-compose run --rm ebook-processor python src/ebook_processor.py`
+2. Re-run the book indexing: `./scripts/index_books.sh`
 3. Restart the MCP server: `./scripts/run_mcp_server.sh`
 
 **Gemini API Issues**
