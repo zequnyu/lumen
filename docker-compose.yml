@@ -31,7 +31,6 @@ services:
       - elasticsearch
     volumes:
       - ./ebooks:/app/ebooks
-      - ./data:/app/data
       - ./src:/app/src
       - .:/app
     environment:
