@@ -18,34 +18,69 @@ logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 class EbookProcessor:
-    def __init__(self, elasticsearch_url: str = None, index_name: str = "ebooks", index_mode: str = "new", use_gemini: bool = False):
+    def __init__(self, elasticsearch_url: str = None, index_name: str = "ebooks", index_mode: str = "new", use_gemini: bool = None):
         self.elasticsearch_url = elasticsearch_url or os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
         self.index_name = index_name
         self.index_mode = index_mode
         self.chunk_size = 1000
         self.chunk_overlap = 200
-        self.use_gemini = use_gemini or os.getenv("GEMINI_API_KEY") is not None
+        # Set use_gemini: explicit parameter overrides environment detection
+        if use_gemini is not None:
+            self.use_gemini = use_gemini
+        else:
+            self.use_gemini = os.getenv("GEMINI_API_KEY") is not None
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2') if not self.use_gemini else None
         self.indexed_books_file = Path(__file__).parent.parent / "indexed_books.json"
         
-    def load_indexed_books(self) -> Set[str]:
-        """Load the set of previously indexed books"""
+    def load_indexed_books(self) -> Dict[str, Dict[str, Any]]:
+        """Load the metadata of previously indexed books"""
         if self.indexed_books_file.exists():
             try:
                 with open(self.indexed_books_file, 'r') as f:
-                    return set(json.load(f))
+                    data = json.load(f)
+                    # Handle legacy format (list of strings)
+                    if isinstance(data, list):
+                        logger.warning("Converting legacy indexed_books.json format")
+                        return {path: {"embedding_model": "unknown", "dimensions": 384, "timestamp": None} for path in data}
+                    return data
             except Exception as e:
                 logger.error(f"Error loading indexed books: {str(e)}")
-                return set()
-        return set()
+                return {}
+        return {}
     
-    def save_indexed_books(self, indexed_books: Set[str]):
-        """Save the set of indexed books"""
+    def save_indexed_books(self, indexed_books: Dict[str, Dict[str, Any]]):
+        """Save the metadata of indexed books"""
         try:
             with open(self.indexed_books_file, 'w') as f:
-                json.dump(list(indexed_books), f, indent=2)
+                json.dump(indexed_books, f, indent=2)
         except Exception as e:
             logger.error(f"Error saving indexed books: {str(e)}")
+    
+    def get_book_metadata(self, file_path: str) -> Dict[str, Any]:
+        """Get metadata for tracking a processed book"""
+        from datetime import datetime
+        return {
+            "embedding_model": "gemini" if self.use_gemini else "sentence-transformers",
+            "model_name": "text-embedding-004" if self.use_gemini else "all-MiniLM-L6-v2",
+            "dimensions": 768 if self.use_gemini else 384,
+            "timestamp": datetime.now().isoformat(),
+            "chunks": None  # Will be filled in during processing
+        }
+    
+    def should_reprocess_book(self, file_path: str, indexed_books: Dict[str, Dict[str, Any]]) -> bool:
+        """Check if a book should be reprocessed based on embedding model changes"""
+        if file_path not in indexed_books:
+            return True
+        
+        book_metadata = indexed_books[file_path]
+        current_model = "gemini" if self.use_gemini else "sentence-transformers"
+        stored_model = book_metadata.get("embedding_model", "unknown")
+        
+        if stored_model != current_model:
+            logger.info(f"Book {file_path} needs reprocessing: {stored_model} -> {current_model}")
+            return True
+        
+        return False
         
     def extract_text_from_epub(self, file_path: str) -> Dict[str, Any]:
         """Extract text content from EPUB file"""
@@ -234,20 +269,26 @@ class EbookProcessor:
         for extension in ['*.epub', '*.pdf']:
             ebook_files.extend(directory.glob(extension))
         
-        # Load previously indexed books
+        # Load previously indexed books metadata
         indexed_books = self.load_indexed_books()
         print(f"🔍 Debug: Loaded {len(indexed_books)} previously indexed books")
         print(f"🔍 Debug: Index mode = {self.index_mode}")
+        print(f"🔍 Debug: Current embedding model = {'gemini' if self.use_gemini else 'sentence-transformers'}")
         
         if self.index_mode == "new":
-            # Filter out already indexed books
+            # Filter out books that don't need reprocessing
             original_count = len(ebook_files)
             if indexed_books:
-                print(f"🔍 Debug: Sample indexed book path: {list(indexed_books)[0]}")
+                sample_book = list(indexed_books.keys())[0]
+                sample_metadata = indexed_books[sample_book]
+                print(f"🔍 Debug: Sample indexed book: {sample_book}")
+                print(f"🔍 Debug: Sample metadata: {sample_metadata}")
             if ebook_files:
                 print(f"🔍 Debug: Sample current file path: {str(ebook_files[0])}")
-            ebook_files = [f for f in ebook_files if str(f) not in indexed_books]
-            print(f"🔍 Debug: Filtered {original_count} files to {len(ebook_files)} new files")
+            
+            # Only process books that need reprocessing (new books or embedding model changed)
+            ebook_files = [f for f in ebook_files if self.should_reprocess_book(str(f), indexed_books)]
+            print(f"🔍 Debug: Filtered {original_count} files to {len(ebook_files)} files needing processing")
         # In 'all' mode, process all files regardless of indexing status
         
         total_books = len(ebook_files)
@@ -284,9 +325,13 @@ class EbookProcessor:
                         'file_path': str(file_path),
                         'chunks': len(documents)
                     })
-                    # Track this book as indexed
-                    indexed_books.add(str(file_path))
-                    print(f" ✅ Completed")
+                    # Track this book as indexed with metadata
+                    book_metadata = self.get_book_metadata(str(file_path))
+                    book_metadata['chunks'] = len(documents)
+                    book_metadata['title'] = book_data['title']
+                    book_metadata['author'] = book_data['author']
+                    indexed_books[str(file_path)] = book_metadata
+                    print(f" ✅ Completed ({book_metadata['embedding_model']}, {book_metadata['dimensions']}D)")
                 else:
                     results['failed'] += 1
                     print(f" ❌ Failed")
@@ -309,10 +354,35 @@ def main():
                         help="Indexing mode: 'new' to index only new books, 'all' to index all books")
     parser.add_argument("--use-gemini", action="store_true",
                         help="Use Gemini embedding API instead of local model")
+    parser.add_argument("--list-indexed", action="store_true",
+                        help="List all indexed books with their embedding metadata")
     
     args = parser.parse_args()
     
     processor = EbookProcessor(index_mode=args.mode, use_gemini=args.use_gemini)
+    
+    # Handle list-indexed command
+    if args.list_indexed:
+        indexed_books = processor.load_indexed_books()
+        if not indexed_books:
+            print("📚 No indexed books found.")
+            return
+        
+        print(f"📚 Found {len(indexed_books)} indexed books:\n")
+        for i, (file_path, metadata) in enumerate(indexed_books.items(), 1):
+            book_name = Path(file_path).name
+            print(f"{i}. {book_name}")
+            print(f"   📖 Title: {metadata.get('title', 'Unknown')}")
+            print(f"   👤 Author: {metadata.get('author', 'Unknown')}")
+            print(f"   🧮 Embedding: {metadata.get('embedding_model', 'unknown')} ({metadata.get('dimensions', 'unknown')}D)")
+            print(f"   📄 Chunks: {metadata.get('chunks', 'unknown')}")
+            print(f"   🕒 Indexed: {metadata.get('timestamp', 'unknown')}")
+            if metadata.get('model_name'):
+                print(f"   🏷️ Model: {metadata.get('model_name')}")
+            print()
+        return
+    
+    # Regular processing
     project_root = Path(__file__).parent.parent
     ebooks_dir = project_root / "ebooks"
     
