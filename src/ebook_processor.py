@@ -18,18 +18,28 @@ logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 class EbookProcessor:
-    def __init__(self, elasticsearch_url: str = None, index_name: str = "ebooks", index_mode: str = "new", use_gemini: bool = None):
+    def __init__(self, elasticsearch_url: str = None, index_name: str = None, index_mode: str = "new", model: str = "local"):
         self.elasticsearch_url = elasticsearch_url or os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
-        self.index_name = index_name
         self.index_mode = index_mode
         self.chunk_size = 1000
         self.chunk_overlap = 200
-        # Set use_gemini: explicit parameter overrides environment detection
-        if use_gemini is not None:
-            self.use_gemini = use_gemini
+        # Set embedding model
+        self.model = model
+        
+        # Set index name based on model if not specified
+        if index_name is None:
+            self.index_name = f"ebooks_{self.model}"
         else:
-            self.use_gemini = os.getenv("GEMINI_API_KEY") is not None
-        self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2') if not self.use_gemini else None
+            self.index_name = index_name
+            
+        if self.model == "gemini" and not os.getenv("GEMINI_API_KEY"):
+            raise ValueError("GEMINI_API_KEY environment variable is required for Gemini model")
+        
+        # Initialize embedding model
+        if self.model == "local":
+            self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        else:
+            self.embedding_model = None
         self.indexed_books_file = Path(__file__).parent.parent / "indexed_books.json"
         
     def load_indexed_books(self) -> Dict[str, Dict[str, Any]]:
@@ -41,7 +51,7 @@ class EbookProcessor:
                     # Handle legacy format (list of strings)
                     if isinstance(data, list):
                         logger.warning("Converting legacy indexed_books.json format")
-                        return {path: {"embedding_model": "unknown", "dimensions": 384, "timestamp": None} for path in data}
+                        return {path: {"embedding_model": "unknown", "dimensions": 768, "timestamp": None} for path in data}
                     return data
             except Exception as e:
                 logger.error(f"Error loading indexed books: {str(e)}")
@@ -60,26 +70,20 @@ class EbookProcessor:
         """Get metadata for tracking a processed book"""
         from datetime import datetime
         return {
-            "embedding_model": "gemini" if self.use_gemini else "sentence-transformers",
-            "model_name": "text-embedding-004" if self.use_gemini else "all-MiniLM-L6-v2",
-            "dimensions": 768 if self.use_gemini else 384,
+            "embedding_model": self.model,
+            "model_name": "text-embedding-004" if self.model == "gemini" else "all-MiniLM-L6-v2",
+            "dimensions": 768 if self.model == "gemini" else 384,
             "timestamp": datetime.now().isoformat(),
             "chunks": None  # Will be filled in during processing
         }
     
     def should_reprocess_book(self, file_path: str, indexed_books: Dict[str, Dict[str, Any]]) -> bool:
-        """Check if a book should be reprocessed based on embedding model changes"""
+        """Check if a book should be reprocessed - skip if indexed by any model"""
         if file_path not in indexed_books:
             return True
         
-        book_metadata = indexed_books[file_path]
-        current_model = "gemini" if self.use_gemini else "sentence-transformers"
-        stored_model = book_metadata.get("embedding_model", "unknown")
-        
-        if stored_model != current_model:
-            logger.info(f"Book {file_path} needs reprocessing: {stored_model} -> {current_model}")
-            return True
-        
+        # If book exists in indexed_books, it's already been processed by some model
+        # Don't reprocess regardless of which model was used
         return False
         
     def extract_text_from_epub(self, file_path: str) -> Dict[str, Any]:
@@ -150,8 +154,8 @@ class EbookProcessor:
             return None
     
     def create_embeddings(self, text: str):
-        """Create embeddings for text using Gemini or SentenceTransformer"""
-        if self.use_gemini:
+        """Create embeddings for text using the specified model"""
+        if self.model == "gemini":
             try:
                 import google.generativeai as genai
                 api_key = os.getenv("GEMINI_API_KEY")
@@ -167,11 +171,11 @@ class EbookProcessor:
                 return result['embedding']
             except Exception as e:
                 logger.error(f"Gemini embedding failed: {e}")
-                if self.embedding_model is None:
-                    self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-                return self.embedding_model.encode(text)
+                raise
+        elif self.model == "local":
+            return self.embedding_model.encode(text).tolist()
         else:
-            return self.embedding_model.encode(text)
+            raise ValueError(f"Unsupported model: {self.model}")
     
     def split_text_into_chunks(self, book_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Split book content into chunks for vector storage"""
@@ -234,7 +238,7 @@ class EbookProcessor:
                         "file_type": {"type": "keyword"},
                         "chunk_id": {"type": "integer"},
                         "total_chunks": {"type": "integer"},
-                        "embeddings": {"type": "dense_vector", "dims": 768 if self.use_gemini else 384}
+                        "embeddings": {"type": "dense_vector", "dims": 768 if self.model == "gemini" else 384}
                     }
                 }
                 es.indices.create(index=self.index_name, mappings=mapping)
@@ -243,10 +247,7 @@ class EbookProcessor:
             for i, doc in enumerate(documents):
                 print(f"\r📊 {current_book}/{total_books} books | 📄 {i+1}/{len(documents)} chunks", end='', flush=True)
                 embeddings = self.create_embeddings(doc['content'])
-                if self.use_gemini:
-                    doc_body = {"embeddings": embeddings, **doc}
-                else:
-                    doc_body = {"embeddings": embeddings.tolist(), **doc}
+                doc_body = {"embeddings": embeddings, **doc}
                 es.index(index=self.index_name, document=doc_body)
             
             return True
@@ -273,7 +274,7 @@ class EbookProcessor:
         indexed_books = self.load_indexed_books()
         print(f"🔍 Debug: Loaded {len(indexed_books)} previously indexed books")
         print(f"🔍 Debug: Index mode = {self.index_mode}")
-        print(f"🔍 Debug: Current embedding model = {'gemini' if self.use_gemini else 'sentence-transformers'}")
+        print(f"🔍 Debug: Current embedding model = gemini")
         
         if self.index_mode == "new":
             # Filter out books that don't need reprocessing
@@ -281,17 +282,13 @@ class EbookProcessor:
             if indexed_books:
                 sample_book = list(indexed_books.keys())[0]
                 sample_metadata = indexed_books[sample_book]
-                print(f"🔍 Debug: Sample indexed book: {sample_book}")
-                print(f"🔍 Debug: Sample metadata: {sample_metadata}")
-            if ebook_files:
-                print(f"🔍 Debug: Sample current file path: {str(ebook_files[0])}")
-            
             # Only process books that need reprocessing (new books or embedding model changed)
             ebook_files = [f for f in ebook_files if self.should_reprocess_book(str(f), indexed_books)]
-            print(f"🔍 Debug: Filtered {original_count} files to {len(ebook_files)} files needing processing")
         # In 'all' mode, process all files regardless of indexing status
         
         total_books = len(ebook_files)
+        print(f"🔧 Using embedding model: {self.model}")
+        print(f"📁 Elasticsearch index: {self.index_name}")
         if self.index_mode == "new":
             all_files = len(list(directory.glob('*.epub')) + list(directory.glob('*.pdf')))
             skipped = all_files - total_books
@@ -352,14 +349,14 @@ def main():
     parser = argparse.ArgumentParser(description="Process ebook files for indexing")
     parser.add_argument("--mode", choices=["new", "all"], default="new",
                         help="Indexing mode: 'new' to index only new books, 'all' to index all books")
-    parser.add_argument("--use-gemini", action="store_true",
-                        help="Use Gemini embedding API instead of local model")
+    parser.add_argument("--model", choices=["gemini", "local"], default="local",
+                        help="Embedding model: 'gemini' for Google Gemini API, 'local' for sentence-transformers")
     parser.add_argument("--list-indexed", action="store_true",
                         help="List all indexed books with their embedding metadata")
     
     args = parser.parse_args()
     
-    processor = EbookProcessor(index_mode=args.mode, use_gemini=args.use_gemini)
+    processor = EbookProcessor(index_mode=args.mode, model=args.model)
     
     # Handle list-indexed command
     if args.list_indexed:

@@ -5,13 +5,13 @@ Process a single book with Gemini embeddings
 import sys
 import os
 import glob
-sys.path.append('/app/src')
+sys.path.append('../src')
 
 from ebook_processor import EbookProcessor
 
 def process_book():
     # Find the Psychology of Money book
-    files = glob.glob('/app/ebooks/*Morgan*')
+    files = glob.glob('../ebooks/*Morgan*')
     if not files:
         print("❌ Morgan Housel book not found!")
         return False

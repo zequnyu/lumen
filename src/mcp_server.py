@@ -15,16 +15,25 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class EbookMCPServer:
-    def __init__(self, elasticsearch_url: str = None, index_name: str = "ebooks"):
+    def __init__(self, elasticsearch_url: str = None, index_name: str = "ebooks", model: str = "gemini"):
         self.elasticsearch_url = elasticsearch_url or os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
         self.index_name = index_name
         self.es_client = Elasticsearch([self.elasticsearch_url])
-        self.use_gemini = os.getenv("GEMINI_API_KEY") is not None
-        self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2') if not self.use_gemini else None
+        self.model = model
+        
+        # Initialize embedding model
+        if self.model == "gemini":
+            if not os.getenv("GEMINI_API_KEY"):
+                raise ValueError("GEMINI_API_KEY environment variable is required for Gemini model")
+            self.embedding_model = None
+        elif self.model == "local":
+            self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        else:
+            raise ValueError(f"Unsupported model: {self.model}")
         
     def create_embeddings(self, text: str):
-        """Create embeddings for text using Gemini or SentenceTransformer"""
-        if self.use_gemini:
+        """Create embeddings for text using the specified model"""
+        if self.model == "gemini":
             try:
                 import google.generativeai as genai
                 api_key = os.getenv("GEMINI_API_KEY")
@@ -40,11 +49,11 @@ class EbookMCPServer:
                 return result['embedding']
             except Exception as e:
                 logger.error(f"Gemini embedding failed: {e}")
-                if self.embedding_model is None:
-                    self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-                return self.embedding_model.encode(text).tolist()
-        else:
+                raise
+        elif self.model == "local":
             return self.embedding_model.encode(text).tolist()
+        else:
+            raise ValueError(f"Unsupported model: {self.model}")
 
     async def search_ebooks(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
         """Search for relevant ebook content using vector similarity"""

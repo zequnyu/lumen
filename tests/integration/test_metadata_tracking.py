@@ -5,7 +5,7 @@ Test the new metadata tracking system
 import sys
 import os
 import glob
-sys.path.append('/app/src')
+sys.path.append('../../src')
 
 from ebook_processor import EbookProcessor
 
@@ -13,7 +13,7 @@ def test_metadata_tracking():
     print("🧪 Testing new metadata tracking system\n")
     
     # Find a book to process
-    files = glob.glob('/app/ebooks/*Morgan*')
+    files = glob.glob('../../ebooks/*Morgan*')
     if not files:
         print("❌ No Morgan Housel book found!")
         return

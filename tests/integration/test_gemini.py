@@ -4,14 +4,14 @@ Quick test script for Gemini embeddings on a single file
 """
 import sys
 import os
-sys.path.append('/app/src')
+sys.path.append('../../src')
 
 from ebook_processor import EbookProcessor
 
 def test_single_file():
     # Find the Psychology of Money book
     import glob
-    files = glob.glob('/app/ebooks/*Morgan*')
+    files = glob.glob('../../ebooks/*Morgan*')
     if not files:
         print("❌ Morgan Housel book not found!")
         return False

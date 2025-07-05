@@ -4,7 +4,7 @@ Test embedding model change detection
 """
 import sys
 import os
-sys.path.append('/app/src')
+sys.path.append('../../src')
 
 from ebook_processor import EbookProcessor
 

@@ -4,7 +4,7 @@ Test the search functionality with Gemini embeddings
 """
 import sys
 import os
-sys.path.append('/app/src')
+sys.path.append('../../src')
 
 from mcp_server import EbookMCPServer
 import asyncio

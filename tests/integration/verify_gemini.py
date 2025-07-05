@@ -4,7 +4,7 @@ Comprehensive verification that Gemini embeddings are being used
 """
 import sys
 import os
-sys.path.append('/app/src')
+sys.path.append('../../src')
 
 from ebook_processor import EbookProcessor
 from elasticsearch import Elasticsearch
