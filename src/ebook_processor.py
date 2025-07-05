@@ -9,14 +9,13 @@ from bs4 import BeautifulSoup
 from sentence_transformers import SentenceTransformer
 import numpy as np
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 class EbookProcessor:
     def __init__(self, elasticsearch_url: str = None, index_name: str = "ebooks"):
         self.elasticsearch_url = elasticsearch_url or os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
         self.index_name = index_name
-        logger.info(f"Using Elasticsearch URL: {self.elasticsearch_url}")
         self.chunk_size = 1000
         self.chunk_overlap = 200
         self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -134,38 +133,16 @@ class EbookProcessor:
         
         return documents
     
-    def store_in_elasticsearch(self, documents: List[Dict[str, Any]]) -> bool:
+    def store_in_elasticsearch(self, documents: List[Dict[str, Any]], current_book: int = 0, total_books: int = 0) -> bool:
         """Store documents in Elasticsearch with embeddings"""
         try:
             from elasticsearch import Elasticsearch
             
-            logger.info(f"Creating Elasticsearch client for {self.elasticsearch_url}")
-            # Create Elasticsearch client
             es = Elasticsearch([self.elasticsearch_url])
-            logger.info(f"Elasticsearch client created: {type(es)}")
-            
-            # Test basic connectivity first
-            try:
-                logger.info("Testing basic ES connectivity...")
-                info = es.info()
-                logger.info(f"ES info: {info}")
-            except Exception as e:
-                logger.error(f"ES connectivity test failed: {e}")
-                raise
-            
-            logger.info(f"Checking if index {self.index_name} exists")
-            
-            # Check if index exists
-            try:
-                index_exists = es.indices.exists(index=self.index_name)
-                logger.info(f"Index exists: {index_exists}")
-            except Exception as e:
-                logger.error(f"Error checking index existence: {e}")
-                raise
+            es.info()  # Test connectivity
             
             # Create index if it doesn't exist
-            if not index_exists:
-                logger.info("Creating index...")
+            if not es.indices.exists(index=self.index_name):
                 mapping = {
                     "properties": {
                         "content": {"type": "text"},
@@ -175,51 +152,27 @@ class EbookProcessor:
                         "file_type": {"type": "keyword"},
                         "chunk_id": {"type": "integer"},
                         "total_chunks": {"type": "integer"},
-                        "embeddings": {
-                            "type": "dense_vector",
-                            "dims": 384
-                        }
+                        "embeddings": {"type": "dense_vector", "dims": 384}
                     }
                 }
-                
-                try:
-                    es.indices.create(index=self.index_name, mappings=mapping)
-                    logger.info(f"Created index: {self.index_name}")
-                except Exception as e:
-                    logger.error(f"Error creating index: {e}")
-                    raise
+                es.indices.create(index=self.index_name, mappings=mapping)
             
             # Store documents with embeddings
             for i, doc in enumerate(documents):
-                logger.info(f"Processing document {i+1}/{len(documents)}")
+                print(f"\r{current_book}/{total_books} books | {i+1}/{len(documents)} chunks", end='', flush=True)
                 embeddings = self.create_embeddings(doc['content'])
-                logger.info(f"Created embeddings for document {i+1}")
-                doc_body = {
-                    "embeddings": embeddings.tolist(),
-                    **doc
-                }
-                logger.info(f"Indexing document {i+1} to Elasticsearch")
+                doc_body = {"embeddings": embeddings.tolist(), **doc}
                 es.index(index=self.index_name, document=doc_body)
             
-            logger.info(f"Successfully stored {len(documents)} documents in Elasticsearch")
             return True
             
         except Exception as e:
-            import traceback
             logger.error(f"Error storing documents in Elasticsearch: {str(e)}")
-            logger.error(f"Full traceback: {traceback.format_exc()}")
-            print(f"ERROR: {str(e)}")
-            print(f"TRACEBACK: {traceback.format_exc()}")
             return False
     
     def process_directory(self, directory_path: str) -> Dict[str, Any]:
         """Process all ebook files in a directory"""
-        results = {
-            'processed': 0,
-            'failed': 0,
-            'total_chunks': 0,
-            'books': []
-        }
+        results = {'processed': 0, 'failed': 0, 'total_chunks': 0, 'books': []}
         
         directory = Path(directory_path)
         if not directory.exists():
@@ -231,11 +184,12 @@ class EbookProcessor:
         for extension in ['*.epub', '*.pdf']:
             ebook_files.extend(directory.glob(extension))
         
-        logger.info(f"Found {len(ebook_files)} ebook files to process")
+        total_books = len(ebook_files)
+        print(f"Found {total_books} ebook files to process")
         
-        for file_path in ebook_files:
+        for idx, file_path in enumerate(ebook_files, 1):
             try:
-                logger.info(f"Processing: {file_path}")
+                print(f"\nProcessing book {idx}/{total_books}: {file_path.name}")
                 
                 # Extract text from ebook
                 book_data = self.process_ebook(str(file_path))
@@ -250,8 +204,7 @@ class EbookProcessor:
                     continue
                 
                 # Store in Elasticsearch
-                logger.info(f"About to store {len(documents)} documents in Elasticsearch")
-                if self.store_in_elasticsearch(documents):
+                if self.store_in_elasticsearch(documents, idx, total_books):
                     results['processed'] += 1
                     results['total_chunks'] += len(documents)
                     results['books'].append({
@@ -260,30 +213,29 @@ class EbookProcessor:
                         'file_path': str(file_path),
                         'chunks': len(documents)
                     })
+                    print(f" ✓ Completed")
                 else:
                     results['failed'] += 1
+                    print(f" ✗ Failed")
                     
             except Exception as e:
-                import traceback
                 logger.error(f"Error processing {file_path}: {str(e)}")
-                logger.error(f"Full traceback: {traceback.format_exc()}")
                 results['failed'] += 1
+                print(f" ✗ Error: {str(e)}")
         
+        print(f"\n\nProcessing complete: {results['processed']} successful, {results['failed']} failed")
         return results
 
 def main():
     """Main function to process ebooks"""
     processor = EbookProcessor()
-    
-    # Get the project root directory
     project_root = Path(__file__).parent.parent
     ebooks_dir = project_root / "ebooks"
     
     if ebooks_dir.exists():
-        results = processor.process_directory(str(ebooks_dir))
-        logger.info(f"Processing complete: {results}")
+        processor.process_directory(str(ebooks_dir))
     else:
-        logger.warning(f"Ebooks directory not found: {ebooks_dir}")
+        print(f"Ebooks directory not found: {ebooks_dir}")
 
 if __name__ == "__main__":
     main()
