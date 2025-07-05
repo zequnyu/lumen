@@ -1,0 +1,11 @@
+{
+  "/app/ebooks/ Morgan Housel - The Psychology of Money_ Timeless Lessons on Wealth, Greed, and Happiness (2020, Harriman House) - libgen.li.epub": {
+    "embedding_model": "gemini",
+    "model_name": "text-embedding-004",
+    "dimensions": 768,
+    "timestamp": "2025-07-05T22:02:18.083798",
+    "chunks": 3,
+    "title": "The Psychology of Money: Timeless Lessons on Wealth, Greed, and Happiness",
+    "author": "Morgan Housel"
+  }
+}
