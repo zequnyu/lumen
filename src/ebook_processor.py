@@ -40,7 +40,7 @@ class EbookProcessor:
             self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
         else:
             self.embedding_model = None
-        self.indexed_books_file = Path(__file__).parent.parent / "indexed_books.json"
+        self.indexed_books_file = Path("/app/data/indexed_books.json")
         
     def load_indexed_books(self) -> Dict[str, Dict[str, Any]]:
         """Load the metadata of previously indexed books"""

@@ -60,9 +60,11 @@ lumen stop           # Stop when done
 lumen index --mode all     # Index all books
 lumen index --model gemini # Use Gemini embeddings (requires GEMINI_API_KEY)
 lumen start               # Start MCP server
-lumen stop                # Stop and cleanup
+lumen stop                # Stop and cleanup all containers
 lumen --help              # Show all options
 ```
+
+**Note:** `lumen stop` now properly cleans up all Docker containers and resources.
 
 ## 🆘 Troubleshooting
 
@@ -83,6 +85,19 @@ curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.sh | ba
 
 # Then reinstall
 curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh | bash
+```
+
+**Note:** If you encounter issues with the curl install, try downloading and running locally:
+```bash
+# Download and run install script
+curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh -o install.sh
+chmod +x install.sh
+./install.sh
+
+# Download and run uninstall script
+curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.sh -o uninstall.sh
+chmod +x uninstall.sh
+./uninstall.sh
 ```
 
 ## 📁 File Locations

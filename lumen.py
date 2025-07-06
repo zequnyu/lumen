@@ -78,10 +78,10 @@ class LumenCLI:
     def _cleanup_elasticsearch(self) -> None:
         """Clean up Elasticsearch container"""
         print("🛑 Stopping and removing Elasticsearch container...")
-        # Stop and remove the Elasticsearch container that was started for this operation
+        # Use docker-compose to properly stop the services
         commands = [
-            ("docker stop ebook-elasticsearch", "Stopping Elasticsearch container"),
-            ("docker rm ebook-elasticsearch", "Removing Elasticsearch container"),
+            ("docker-compose -f /tmp/lumen-install-compose.yml -p lumen stop elasticsearch", "Stopping Elasticsearch container"),
+            ("docker-compose -f /tmp/lumen-install-compose.yml -p lumen rm -f elasticsearch", "Removing Elasticsearch container"),
         ]
         
         for command, description in commands:

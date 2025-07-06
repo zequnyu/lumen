@@ -151,7 +151,7 @@ class EbookMCPServer:
         """Get list of all books from indexed_books.json - simple and efficient!"""
         try:
             # Read the indexed books file directly - much simpler than querying Elasticsearch
-            indexed_books_path = "/app/indexed_books.json"
+            indexed_books_path = "/app/data/indexed_books.json"
             
             try:
                 with open(indexed_books_path, 'r') as f:
@@ -161,6 +161,11 @@ class EbookMCPServer:
                 return []
             except json.JSONDecodeError:
                 logger.warning(f"Invalid JSON in indexed books file: {indexed_books_path}")
+                return []
+            
+            # Handle empty indexed_books.json (new installations)
+            if not indexed_books:
+                logger.info("No books indexed yet - indexed_books.json is empty")
                 return []
             
             # Convert to book list format
@@ -307,7 +312,10 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             if not results:
                 return [types.TextContent(
                     type="text",
-                    text="No relevant content found for your query."
+                    text="No relevant content found for your query. To add books:\n"
+                         "1. Copy your .epub/.pdf files to ~/lumen-ebooks/\n"
+                         "2. Run: lumen index --mode all\n"
+                         "3. Restart Claude Desktop"
                 )]
             
             # Format results
@@ -333,7 +341,10 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             if not books:
                 return [types.TextContent(
                     type="text",
-                    text="No books found in the database."
+                    text="No books found in the database. To add books:\n"
+                         "1. Copy your .epub/.pdf files to ~/lumen-ebooks/\n"
+                         "2. Run: lumen index --mode all\n"
+                         "3. Restart Claude Desktop"
                 )]
             
             formatted_books = []
