@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "ebook-mcp-server": {
-      "command": "/Users/zequnyu/Documents/ebook-mcp-tool/run_mcp_server.sh",
-      "args": []
-    }
-  }
-}
