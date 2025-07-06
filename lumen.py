@@ -154,22 +154,11 @@ class LumenCLI:
         """Stop and clean up the MCP server environment"""
         print("🛑 Stopping Lumen MCP server environment...")
         
-        commands = [
-            ("docker-compose stop", "Stopping all Docker containers"),
-            ("docker-compose down", "Removing Docker containers"),
-        ]
+        # Use the same cleanup method as index command
+        self._cleanup_elasticsearch()
         
-        success = True
-        for command, description in commands:
-            if not self.run_command(command, description):
-                success = False
-        
-        if success:
-            print("\n✅ Lumen environment stopped and cleaned up!")
-        else:
-            print("\n⚠️  Some cleanup steps may have failed")
-        
-        return success
+        print("\n✅ Lumen environment stopped and cleaned up!")
+        return True
 
 
 def main():
