@@ -52,5 +52,14 @@
     "chunks": 2356,
     "title": "The Pursuit of Power: Europe, 1815-1914",
     "author": "Richard J. Evans"
+  },
+  "/app/ebooks/ Eugene Rogan - The Arabs_ A History (2011, Basic Books) - libgen.li.epub": {
+    "embedding_model": "gemini",
+    "model_name": "text-embedding-004",
+    "dimensions": 768,
+    "timestamp": "2025-07-06T05:52:00.022203",
+    "chunks": 1741,
+    "title": "The Arabs",
+    "author": "Eugene Rogan"
   }
 }
