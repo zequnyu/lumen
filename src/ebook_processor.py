@@ -269,12 +269,11 @@ class EbookProcessor:
         ebook_files = []
         for extension in ['*.epub', '*.pdf']:
             ebook_files.extend(directory.glob(extension))
-        
+
         # Load previously indexed books metadata
         indexed_books = self.load_indexed_books()
         print(f"🔍 Debug: Loaded {len(indexed_books)} previously indexed books")
         print(f"🔍 Debug: Index mode = {self.index_mode}")
-        print(f"🔍 Debug: Current embedding model = gemini")
         
         if self.index_mode == "new":
             # Filter out books that don't need reprocessing

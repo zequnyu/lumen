@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
@@ -39,20 +37,6 @@ services:
     networks:
       - ebook-network
 
-  mcp-server:
-    build: .
-    container_name: ebook-mcp-server
-    depends_on:
-      - elasticsearch
-    ports:
-      - "8000:8000"
-    environment:
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - PYTHONPATH=/app
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-    networks:
-      - ebook-network
-    command: python src/mcp_server.py
 
 volumes:
   elasticsearch_data:

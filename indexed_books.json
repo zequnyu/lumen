@@ -3,18 +3,27 @@
     "embedding_model": "gemini",
     "model_name": "text-embedding-004",
     "dimensions": 768,
-    "timestamp": "2025-07-05T23:46:43.774893",
+    "timestamp": "2025-07-06T02:22:53.572803",
     "chunks": 369,
     "title": "The Psychology of Money: Timeless Lessons on Wealth, Greed, and Happiness",
     "author": "Morgan Housel"
   },
-  "/app/ebooks/ Rogan, Eugene - Fall of the Ottomans_ The Great War in the Middle East (Perseus Book Group) - libgen.li.epub": {
+  "/app/ebooks/ Hessler, Peter - Oracle Bones_ a Journey Between Chinas Past And Present (2014, HarperCollins e-Books) - libgen.li.epub": {
     "embedding_model": "local",
     "model_name": "all-MiniLM-L6-v2",
     "dimensions": 384,
-    "timestamp": "2025-07-06T01:35:50.777304",
-    "chunks": 1292,
-    "title": "Fall of the Ottomans : The Great War in the Middle East (9780465056699)",
-    "author": "Rogan, Eugene"
+    "timestamp": "2025-07-06T02:26:21.571973",
+    "chunks": 1175,
+    "title": "Oracle Bones",
+    "author": "Peter Hessler"
+  },
+  "/app/ebooks/ Scott Anderson - Lawrence in Arabia_ War, Deceit, Imperial Folly and the Making of the Modern Middle East (2013, Doubleday) - libgen.li.epub": {
+    "embedding_model": "local",
+    "model_name": "all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "timestamp": "2025-07-06T02:30:30.330152",
+    "chunks": 1803,
+    "title": "Lawrence in Arabia",
+    "author": "Scott Anderson"
   }
 }

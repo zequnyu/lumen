@@ -20,10 +20,11 @@ class EbookMCPServer:
         self.elasticsearch_url = elasticsearch_url or os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
         self.es_client = Elasticsearch([self.elasticsearch_url])
         
-        # Use both indices to find all books
+        # Use all three indices to find all books
         self.local_index = "ebooks_local"
         self.gemini_index = "ebooks_gemini"
-        self.all_indices = [self.local_index, self.gemini_index]
+        self.legacy_index = "ebooks"  # Old index that might contain additional books
+        self.all_indices = [self.local_index, self.gemini_index, self.legacy_index]
         
         # Initialize both embedding models for comprehensive search
         self.local_model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -147,42 +148,39 @@ class EbookMCPServer:
             return []
     
     async def get_book_list(self) -> List[Dict[str, Any]]:
-        """Get list of all books from both indices"""
+        """Get list of all books from indexed_books.json - simple and efficient!"""
         try:
-            books_dict = {}
+            # Read the indexed books file directly - much simpler than querying Elasticsearch
+            indexed_books_path = "/app/indexed_books.json"
             
-            # Search query to get unique books
-            search_query = {
-                "size": 1000,
-                "_source": ["title", "author", "file_type", "total_chunks"],
-                "query": {"match_all": {}}
-            }
+            try:
+                with open(indexed_books_path, 'r') as f:
+                    indexed_books = json.load(f)
+            except FileNotFoundError:
+                logger.warning(f"Indexed books file not found: {indexed_books_path}")
+                return []
+            except json.JSONDecodeError:
+                logger.warning(f"Invalid JSON in indexed books file: {indexed_books_path}")
+                return []
             
-            # Search both indices
-            for index_name in self.all_indices:
-                try:
-                    response = self.es_client.search(index=index_name, body=search_query)
-                    
-                    # Process books from this index
-                    for hit in response['hits']['hits']:
-                        source = hit['_source']
-                        key = (source.get('title', 'Unknown'), source.get('author', 'Unknown'))
-                        if key not in books_dict:
-                            books_dict[key] = {
-                                'title': source.get('title', 'Unknown'),
-                                'author': source.get('author', 'Unknown'),
-                                'file_type': source.get('file_type', 'Unknown'),
-                                'total_chunks': source.get('total_chunks', 0),
-                                'index': index_name
-                            }
-                except Exception as e:
-                    logger.info(f"Index {index_name} not available: {e}")
-                    continue
+            # Convert to book list format
+            books = []
+            for file_path, book_data in indexed_books.items():
+                books.append({
+                    'title': book_data.get('title', 'Unknown'),
+                    'author': book_data.get('author', 'Unknown'),
+                    'file_type': 'epub',  # Assuming epub for now
+                    'total_chunks': book_data.get('chunks', 0),
+                    'embedding_model': book_data.get('embedding_model', 'unknown'),
+                    'dimensions': book_data.get('dimensions', 0),
+                    'timestamp': book_data.get('timestamp', '')
+                })
             
-            return list(books_dict.values())
+            logger.info(f"Found {len(books)} books in indexed_books.json")
+            return books
             
         except Exception as e:
-            logger.error(f"Error getting book list: {str(e)}")
+            logger.error(f"Error reading indexed books file: {str(e)}")
             return []
     
     async def get_book_summary(self, title: str) -> Dict[str, Any]:
@@ -199,8 +197,8 @@ class EbookMCPServer:
                 "_source": ["title", "author", "file_type", "content"]
             }
             
-            # Search both indices for comprehensive results
-            indices_to_search = ["ebooks_local"]
+            # Search all indices for comprehensive results
+            indices_to_search = ["ebooks_local", "ebooks"]  # Include legacy index
             if self.has_gemini:
                 indices_to_search.append("ebooks_gemini")
             

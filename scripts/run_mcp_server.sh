@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Script to run MCP server as a background service
+# Script to prepare the MCP server environment
 # Usage: ./scripts/run_mcp_server.sh
 # 
 # The MCP server automatically searches ALL books regardless of embedding model used during indexing
 
-echo "🚀 Starting MCP server as background service..."
+echo "🚀 Preparing MCP server environment..."
 echo "🔍 Will search all books from both local and Gemini embeddings automatically"
 
-# Start both Elasticsearch and MCP server
-echo "🔧 Starting Elasticsearch and MCP server..."
-docker-compose up -d elasticsearch mcp-server
+# Start only Elasticsearch (MCP server will be started by Claude Desktop)
+echo "🔧 Starting Elasticsearch..."
+docker-compose up -d elasticsearch
 
 # Wait for Elasticsearch to be ready
 echo "⏳ Waiting for Elasticsearch to be ready..."
@@ -19,14 +19,7 @@ while ! curl -s http://localhost:9200/_health >/dev/null 2>&1; do
 done
 echo "✅ Elasticsearch is ready"
 
-# Check MCP server status
-echo "Checking MCP server status..."
-sleep 3
-if docker-compose ps mcp-server | grep -q "Up"; then
-    echo "✅ MCP server is running and ready for Claude Desktop"
-    echo "📋 To stop: docker-compose stop mcp-server"
-    echo "📋 To view logs: docker-compose logs -f mcp-server"
-else
-    echo "❌ MCP server failed to start. Check logs:"
-    docker-compose logs mcp-server
-fi
+echo "✅ Environment is ready for MCP server"
+echo "📋 The MCP server will be started by Claude Desktop when needed"
+echo "📋 To stop Elasticsearch: docker-compose stop elasticsearch"
+echo "📋 To test MCP server manually: ./start_mcp_server.sh"
