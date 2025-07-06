@@ -25,5 +25,32 @@
     "chunks": 1803,
     "title": "Lawrence in Arabia",
     "author": "Scott Anderson"
+  },
+  "/app/ebooks/ Fromkin, David - A Peace to End All Peace_ The Fall of the Ottoman Empire and the Creation of the Modern Middle East (1989, Holt Paperbacks) - libgen.li.epub": {
+    "embedding_model": "local",
+    "model_name": "all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "timestamp": "2025-07-06T03:09:47.930509",
+    "chunks": 1751,
+    "title": "A Peace to End all Peace",
+    "author": "David Fromkin"
+  },
+  "/app/ebooks/ Rogan, Eugene - Fall of the Ottomans_ The Great War in the Middle East (Perseus Book Group) - libgen.li.epub": {
+    "embedding_model": "local",
+    "model_name": "all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "timestamp": "2025-07-06T03:11:08.261953",
+    "chunks": 1292,
+    "title": "Fall of the Ottomans : The Great War in the Middle East (9780465056699)",
+    "author": "Rogan, Eugene"
+  },
+  "/app/ebooks/[Penguin History of Europe] Richard J. Evans - The Pursuit of Power_ Europe, 1815-1914 (2016, Penguin) - libgen.li.epub": {
+    "embedding_model": "local",
+    "model_name": "all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "timestamp": "2025-07-06T03:11:57.834136",
+    "chunks": 2356,
+    "title": "The Pursuit of Power: Europe, 1815-1914",
+    "author": "Richard J. Evans"
   }
 }
