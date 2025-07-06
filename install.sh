@@ -33,16 +33,10 @@ echo
 mkdir -p "$EBOOKS_DIR"
 mkdir -p "$LUMEN_DATA_DIR"
 
-# Download Lumen source code
-echo "⬇️  Downloading Lumen source code..."
-TEMP_DIR=$(mktemp -d)
-cd "$TEMP_DIR"
-
-# Download and extract repository
-curl -sSL https://github.com/zequnyu/lumen/archive/main.tar.gz | tar -xz --strip-components=1
-
-echo "🔨 Building Lumen Docker image..."
-docker build -t lumen:latest .
+# Pull pre-built Lumen Docker image
+echo "⬇️  Pulling Lumen Docker image..."
+docker pull zequnyu/lumen:latest
+docker tag zequnyu/lumen:latest lumen:latest
 
 # Create temporary docker-compose for installation
 cat > /tmp/lumen-install-compose.yml << 'EOF'
@@ -85,9 +79,7 @@ networks:
     driver: bridge
 EOF
 
-# Clean up temp directory
-cd /tmp
-rm -rf "$TEMP_DIR"
+# Image pulled successfully
 
 # Create global lumen command that uses Docker
 echo "🔧 Creating global lumen command..."
