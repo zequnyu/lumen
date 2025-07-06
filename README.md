@@ -78,8 +78,10 @@ cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
 
 **Want to start fresh?**
 ```bash
-rm -rf ~/.lumen-data ~/lumen-ebooks
-sudo rm /usr/local/bin/lumen
+# Complete uninstall (preserves your ebooks)
+curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.sh | bash
+
+# Then reinstall
 curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh | bash
 ```
 
