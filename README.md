@@ -82,14 +82,6 @@ curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.sh | ba
 **What's preserved:**
 - Your ebooks in `~/lumen-ebooks/` (safe to keep)
 
-**Alternative manual download:**
-```bash
-# Download and run uninstall script locally
-curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.sh -o uninstall.sh
-chmod +x uninstall.sh
-./uninstall.sh
-```
-
 **To reinstall later:**
 ```bash
 curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh | bash
@@ -103,8 +95,8 @@ curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh | bash
 # 2. Check if Lumen is running:
 lumen start
 
-# 3. Verify config exists:
-cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
+# 3. Verify your MCP client configuration has been updated
+# Check your MCP client documentation for config file location
 ```
 
 **Want to start fresh?** See the [Uninstall section](#🗑️-uninstall) above for complete removal and reinstallation.
@@ -113,8 +105,7 @@ cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
 
 - **Your ebooks**: `~/lumen-ebooks/` (add .epub/.pdf files here)
 - **Lumen data**: `~/.lumen-data/` (indexed metadata)
-- **MCP config**: `~/Library/Application Support/Claude/claude_desktop_config.json` (Claude Desktop)
-- **Other clients**: Check your MCP client documentation for config location
+- **MCP config**: Check your MCP client documentation for config location
 
 ---
 
@@ -179,22 +170,6 @@ docker-compose run --rm lumen --help
 - Books are chunked into ~1000 character segments with 200 character overlap
 - Supports both new book indexing and full reindexing
 - MCP server searches across all indexed books regardless of embedding model used
-
-### **Building Distribution**
-
-```bash
-# Update install script with your GitHub username
-sed -i 's/zequnyu/YOURUSERNAME/g' install.sh
-
-# Test locally
-python3 -m http.server 8000
-curl -sSL http://localhost:8000/install.sh | bash
-
-# Push to GitHub for distribution
-git add .
-git commit -m "Update for distribution"
-git push origin main
-```
 
 ---
 
