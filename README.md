@@ -14,7 +14,7 @@ Search your ebooks with AI using MCP (Model Context Protocol) integration.
 
 ```bash
 # 1. Install Lumen
-curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh | bash
+bash <(curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh)
 
 # 2. Add your ebooks
 cp ~/Downloads/*.epub ~/lumen-ebooks/
@@ -70,7 +70,7 @@ lumen --help              # Show all options
 
 **Complete Removal (preserves your ebooks):**
 ```bash
-curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.sh | bash
+bash <(curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.sh)
 ```
 
 **What gets removed:**
@@ -84,7 +84,7 @@ curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.sh | ba
 
 **To reinstall later:**
 ```bash
-curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh | bash
+bash <(curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh)
 ```
 
 ## 🆘 Troubleshooting
