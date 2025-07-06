@@ -4,7 +4,7 @@ set -e
 # Lumen Containerized Installation Script
 # Everything runs in Docker - no files stored on host except ebooks
 
-echo "🌟 Installing Lumen (Fully Containerized) - AI-powered ebook search for Claude Desktop"
+echo "🌟 Installing Lumen (Fully Containerized) - AI-powered ebook search via MCP"
 echo
 
 # Check if Docker is installed
@@ -39,7 +39,7 @@ TEMP_DIR=$(mktemp -d)
 cd "$TEMP_DIR"
 
 # Download and extract repository
-curl -sSL https://github.com/yourusername/lumen/archive/main.tar.gz | tar -xz --strip-components=1
+curl -sSL https://github.com/zequnyu/lumen/archive/main.tar.gz | tar -xz --strip-components=1
 
 echo "🔨 Building Lumen Docker image..."
 docker build -t lumen:latest .
@@ -104,7 +104,7 @@ mkdir -p "\$LUMEN_DATA_DIR"
 
 # Show helpful message for first-time users
 if [ "\$1" = "" ]; then
-    echo "🌟 Lumen - AI-powered ebook search for Claude Desktop"
+    echo "🌟 Lumen - AI-powered ebook search via MCP"
     echo
     echo "📚 Your ebooks directory: \$EBOOKS_DIR"
     echo
@@ -112,11 +112,11 @@ if [ "\$1" = "" ]; then
     echo "  1. Add .epub/.pdf files to: \$EBOOKS_DIR"
     echo "  2. lumen index --mode all"
     echo "  3. lumen start"
-    echo "  4. Use Claude Desktop to search your books!"
+    echo "  4. Use your MCP client to search your books!"
     echo
     echo "💡 Commands:"
     echo "  lumen index          # Index new books"
-    echo "  lumen start          # Start for Claude Desktop"
+    echo "  lumen start          # Start MCP server"
     echo "  lumen stop           # Stop and cleanup"
     echo "  lumen --help         # Show all options"
     echo
@@ -154,8 +154,8 @@ docker-compose -f /tmp/lumen-install-compose.yml -p lumen-mcp run --rm \\
 EOF
 chmod +x "$MCP_SCRIPT"
 
-# Configure Claude Desktop
-echo "⚙️  Configuring Claude Desktop..."
+# Configure MCP client (Claude Desktop by default)
+echo "⚙️  Configuring MCP client (Claude Desktop)..."
 CLAUDE_CONFIG_DIR="$HOME/Library/Application Support/Claude"
 CLAUDE_CONFIG_FILE="$CLAUDE_CONFIG_DIR/claude_desktop_config.json"
 
@@ -165,7 +165,7 @@ mkdir -p "$CLAUDE_CONFIG_DIR"
 # Backup existing config if it exists
 if [ -f "$CLAUDE_CONFIG_FILE" ]; then
     cp "$CLAUDE_CONFIG_FILE" "$CLAUDE_CONFIG_FILE.backup.$(date +%s)"
-    echo "📋 Backed up existing Claude Desktop config"
+    echo "📋 Backed up existing MCP client config"
 fi
 
 # Create or update Claude Desktop config
@@ -193,7 +193,7 @@ config['mcpServers']['lumen'] = {
 with open(config_file, 'w') as f:
     json.dump(config, f, indent=2)
 
-print('✅ Updated Claude Desktop configuration')
+print('✅ Updated MCP client configuration')
 "
 else
     # Create new config
@@ -207,7 +207,7 @@ else
   }
 }
 EOF
-    echo "✅ Created Claude Desktop configuration"
+    echo "✅ Created MCP client configuration"
 fi
 
 echo
@@ -219,11 +219,11 @@ echo "📋 Next steps:"
 echo "1. Add your ebook files (.epub, .pdf) to: $EBOOKS_DIR"
 echo "2. Index your books: lumen index --mode all"
 echo "3. Start Lumen: lumen start"
-echo "4. Open Claude Desktop and start searching your books!"
+echo "4. Open your MCP client and start searching your books!"
 echo
 echo "💡 Useful commands:"
 echo "  lumen index          # Index new books"
-echo "  lumen start          # Start for Claude Desktop"
+echo "  lumen start          # Start MCP server"
 echo "  lumen stop           # Stop and cleanup"
 echo "  lumen --help         # Show all options"
 echo

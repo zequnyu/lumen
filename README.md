@@ -1,6 +1,6 @@
 # Lumen
 
-Search your ebooks with AI using Claude Desktop's MCP integration.
+Search your ebooks with AI using MCP (Model Context Protocol) integration.
 
 **🐳 Fully Containerized** - Easy one-command installation with complete Docker isolation.
 
@@ -8,13 +8,13 @@ Search your ebooks with AI using Claude Desktop's MCP integration.
 
 ### **Prerequisites**
 - **Docker Desktop** - [Install from docker.com](https://docs.docker.com/get-docker/)
-- **Claude Desktop** - [Download from claude.ai](https://claude.ai/download)
+- **MCP-Compatible Client** - Such as Claude Desktop, Cline, or other MCP clients
 
 ### **Installation (5 minutes)**
 
 ```bash
 # 1. Install Lumen
-curl -sSL https://raw.githubusercontent.com/yourusername/lumen/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh | bash
 
 # 2. Add your ebooks
 cp ~/Downloads/*.epub ~/lumen-ebooks/
@@ -23,13 +23,14 @@ cp ~/Downloads/*.pdf ~/lumen-ebooks/
 # 3. Index your books
 lumen index --mode all
 
-# 4. IMPORTANT: Restart Claude Desktop
-# Quit Claude Desktop completely (Cmd+Q), then reopen it
+# 4. IMPORTANT: Restart your MCP client
+# For Claude Desktop: Quit completely (Cmd+Q), then reopen
+# For other MCP clients: Restart according to client documentation
 
 # 5. Start Lumen
 lumen start
 
-# 6. Use Claude Desktop!
+# 6. Use your MCP client!
 # Ask: "What does Morgan Housel say about compound interest?"
 ```
 
@@ -39,7 +40,7 @@ lumen start
 cp new-book.epub ~/lumen-ebooks/
 lumen index          # Index new books (fast)
 
-# Use with Claude Desktop  
+# Use with your MCP client
 lumen start          # Start when needed
 lumen stop           # Stop when done
 ```
@@ -51,23 +52,23 @@ lumen stop           # Stop when done
 - **Smart Indexing** - Only processes new books by default
 - **Embedding Models** - Local (fast) or Google Gemini (better quality)
 - **Complete Isolation** - Everything runs in Docker containers
-- **Auto-Configuration** - Claude Desktop setup is automatic
+- **Auto-Configuration** - MCP client setup is automatic
 
 ## 💡 Commands
 
 ```bash
 lumen index --mode all     # Index all books
 lumen index --model gemini # Use Gemini embeddings (requires GEMINI_API_KEY)
-lumen start               # Start for Claude Desktop
+lumen start               # Start MCP server
 lumen stop                # Stop and cleanup
 lumen --help              # Show all options
 ```
 
 ## 🆘 Troubleshooting
 
-**Claude Desktop not finding books?**
+**MCP client not finding books?**
 ```bash
-# 1. Make sure you restarted Claude Desktop after installation
+# 1. Make sure you restarted your MCP client after installation
 # 2. Check if Lumen is running:
 lumen start
 
@@ -79,14 +80,15 @@ cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
 ```bash
 rm -rf ~/.lumen-data ~/lumen-ebooks
 sudo rm /usr/local/bin/lumen
-curl -sSL https://raw.githubusercontent.com/yourusername/lumen/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh | bash
 ```
 
 ## 📁 File Locations
 
 - **Your ebooks**: `~/lumen-ebooks/` (add .epub/.pdf files here)
 - **Lumen data**: `~/.lumen-data/` (indexed metadata)
-- **Claude config**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **MCP config**: `~/Library/Application Support/Claude/claude_desktop_config.json` (Claude Desktop)
+- **Other clients**: Check your MCP client documentation for config location
 
 ---
 
@@ -98,7 +100,7 @@ curl -sSL https://raw.githubusercontent.com/yourusername/lumen/main/install.sh |
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/lumen.git
+git clone https://github.com/zequnyu/lumen.git
 cd lumen
 
 # Development workflow
@@ -127,7 +129,7 @@ docker-compose run --rm lumen --help
 ### **Architecture**
 
 - **Lumen CLI** (`lumen.py`) - Unified command tool with Docker lifecycle management
-- **MCP Server** (`src/mcp_server.py`) - Claude Desktop integration
+- **MCP Server** (`src/mcp_server.py`) - MCP client integration
 - **Ebook Processor** (`src/ebook_processor.py`) - Text extraction and embedding generation
 - **Elasticsearch** - Vector database for book chunks and search
 - **Docker Compose** - Development environment orchestration
@@ -156,7 +158,7 @@ docker-compose run --rm lumen --help
 
 ```bash
 # Update install script with your GitHub username
-sed -i 's/yourusername/YOURUSERNAME/g' install.sh
+sed -i 's/zequnyu/YOURUSERNAME/g' install.sh
 
 # Test locally
 python3 -m http.server 8000
@@ -170,4 +172,4 @@ git push origin main
 
 ---
 
-*Transform your ebook collection into an AI-searchable library! 📚✨*
+*Transform your ebook collection into an AI-searchable library accessible through any MCP client! 📚✨*
