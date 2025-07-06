@@ -132,16 +132,28 @@ cat > "$MCP_SCRIPT" << EOF
 EBOOKS_DIR="$EBOOKS_DIR"
 LUMEN_DATA_DIR="$LUMEN_DATA_DIR"
 
-# Start Lumen in server mode
-LUMEN_EBOOKS_DIR="\$EBOOKS_DIR" LUMEN_DATA_DIR="\$LUMEN_DATA_DIR" \\
-docker-compose -f /tmp/lumen-install-compose.yml -p lumen-mcp up -d elasticsearch
-
-# Wait for Elasticsearch
-sleep 10
+# Check if Elasticsearch is already running, if not start it
+if ! curl -s http://localhost:9200/_cluster/health > /dev/null 2>&1; then
+    echo "Starting Elasticsearch..."
+    LUMEN_EBOOKS_DIR="\$EBOOKS_DIR" LUMEN_DATA_DIR="\$LUMEN_DATA_DIR" \\
+    docker-compose -f /tmp/lumen-install-compose.yml -p lumen up -d elasticsearch
+    
+    # Wait for Elasticsearch to be ready
+    echo "Waiting for Elasticsearch to be ready..."
+    for i in {1..30}; do
+        if curl -s http://localhost:9200/_cluster/health > /dev/null 2>&1; then
+            echo "Elasticsearch is ready"
+            break
+        fi
+        sleep 2
+    done
+else
+    echo "Elasticsearch is already running"
+fi
 
 # Start MCP server
 LUMEN_EBOOKS_DIR="\$EBOOKS_DIR" LUMEN_DATA_DIR="\$LUMEN_DATA_DIR" \\
-docker-compose -f /tmp/lumen-install-compose.yml -p lumen-mcp run --rm \\
+docker-compose -f /tmp/lumen-install-compose.yml -p lumen run --rm \\
     --entrypoint "python3" lumen /app/src/mcp_server.py
 EOF
 chmod +x "$MCP_SCRIPT"
