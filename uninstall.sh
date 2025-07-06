@@ -103,4 +103,3 @@ echo "INFO: You may need to restart your MCP client for changes to take effect"
 echo
 echo "To reinstall Lumen later:"
 echo "   curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh | bash"
-echo
