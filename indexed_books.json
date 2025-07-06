@@ -44,15 +44,6 @@
     "title": "Fall of the Ottomans : The Great War in the Middle East (9780465056699)",
     "author": "Rogan, Eugene"
   },
-  "/app/ebooks/[Penguin History of Europe] Richard J. Evans - The Pursuit of Power_ Europe, 1815-1914 (2016, Penguin) - libgen.li.epub": {
-    "embedding_model": "local",
-    "model_name": "all-MiniLM-L6-v2",
-    "dimensions": 384,
-    "timestamp": "2025-07-06T03:11:57.834136",
-    "chunks": 2356,
-    "title": "The Pursuit of Power: Europe, 1815-1914",
-    "author": "Richard J. Evans"
-  },
   "/app/ebooks/ Eugene Rogan - The Arabs_ A History (2011, Basic Books) - libgen.li.epub": {
     "embedding_model": "gemini",
     "model_name": "text-embedding-004",
@@ -61,5 +52,14 @@
     "chunks": 1741,
     "title": "The Arabs",
     "author": "Eugene Rogan"
+  },
+  "/app/ebooks/[Penguin History of Europe] Richard J. Evans - The Pursuit of Power_ Europe, 1815-1914 (2016, Penguin) - libgen.li.epub": {
+    "embedding_model": "local",
+    "model_name": "all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "timestamp": "2025-07-06T17:30:55.855275",
+    "chunks": 2356,
+    "title": "The Pursuit of Power: Europe, 1815-1914",
+    "author": "Richard J. Evans"
   }
 }
