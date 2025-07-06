@@ -4,46 +4,34 @@ Search your ebooks with AI using Claude Desktop's MCP integration.
 
 **🐳 Fully Containerized** - Easy one-command installation with complete Docker isolation.
 
-## ⚡ Easy Installation (Recommended)
+## ⚡ Quick Install & Use
 
 ### **Prerequisites**
 - **Docker Desktop** - [Install from docker.com](https://docs.docker.com/get-docker/)
 - **Claude Desktop** - [Download from claude.ai](https://claude.ai/download)
 
-### **Complete Setup (5 minutes)**
+### **Installation (5 minutes)**
 
-**1. Install Lumen (one command):**
 ```bash
-curl -sSL https://raw.githubusercontent.com/your-repo/lumen/main/install.sh | bash
-```
+# 1. Install Lumen
+curl -sSL https://raw.githubusercontent.com/yourusername/lumen/main/install.sh | bash
 
-**2. Add your ebooks:**
-```bash
-# Copy your .epub/.pdf files to the ebooks directory
+# 2. Add your ebooks
 cp ~/Downloads/*.epub ~/lumen-ebooks/
 cp ~/Downloads/*.pdf ~/lumen-ebooks/
-```
 
-**3. Index your books:**
-```bash
+# 3. Index your books
 lumen index --mode all
-```
 
-**4. Configure Claude Desktop (IMPORTANT):**
-```bash
-# The install script auto-configures Claude Desktop, but you MUST restart it:
-# 1. Quit Claude Desktop completely (Cmd+Q on Mac, or close completely)
-# 2. Reopen Claude Desktop
-# 3. Lumen MCP server will now be active
-```
+# 4. IMPORTANT: Restart Claude Desktop
+# Quit Claude Desktop completely (Cmd+Q), then reopen it
 
-**5. Start Lumen:**
-```bash
+# 5. Start Lumen
 lumen start
-```
 
-**6. Use Claude Desktop immediately:**
-Ask Claude about your books: *"What does Morgan Housel say about compound interest?"*
+# 6. Use Claude Desktop!
+# Ask: "What does Morgan Housel say about compound interest?"
+```
 
 ### **Daily Usage**
 ```bash
@@ -56,168 +44,130 @@ lumen start          # Start when needed
 lumen stop           # Stop when done
 ```
 
-See [INSTALL.md](INSTALL.md) for detailed installation guide and troubleshooting.
+## 📚 Features
+
+- **AI-Powered Search** - Ask natural language questions about your books
+- **Multiple Formats** - EPUB and PDF support with metadata extraction
+- **Smart Indexing** - Only processes new books by default
+- **Embedding Models** - Local (fast) or Google Gemini (better quality)
+- **Complete Isolation** - Everything runs in Docker containers
+- **Auto-Configuration** - Claude Desktop setup is automatic
+
+## 💡 Commands
+
+```bash
+lumen index --mode all     # Index all books
+lumen index --model gemini # Use Gemini embeddings (requires GEMINI_API_KEY)
+lumen start               # Start for Claude Desktop
+lumen stop                # Stop and cleanup
+lumen --help              # Show all options
+```
+
+## 🆘 Troubleshooting
+
+**Claude Desktop not finding books?**
+```bash
+# 1. Make sure you restarted Claude Desktop after installation
+# 2. Check if Lumen is running:
+lumen start
+
+# 3. Verify config exists:
+cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
+```
+
+**Want to start fresh?**
+```bash
+rm -rf ~/.lumen-data ~/lumen-ebooks
+sudo rm /usr/local/bin/lumen
+curl -sSL https://raw.githubusercontent.com/yourusername/lumen/main/install.sh | bash
+```
+
+## 📁 File Locations
+
+- **Your ebooks**: `~/lumen-ebooks/` (add .epub/.pdf files here)
+- **Lumen data**: `~/.lumen-data/` (indexed metadata)
+- **Claude config**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ---
 
-## 🛠️ Development Setup
+## 🛠️ Development
 
 **For developers working on Lumen:**
 
-## Quick Start
+### **Local Development Setup**
 
-**First time setup:**
 ```bash
-# Index your books
+# Clone repository
+git clone https://github.com/yourusername/lumen.git
+cd lumen
+
+# Development workflow
 docker-compose run --rm lumen index --mode all
-
-# Start the server for Claude Desktop
 docker-compose run --rm lumen start
-```
-
-**Adding new books:**
-1. Drop your `.epub` or `.pdf` file in `ebooks/` folder
-2. Run: `docker-compose run --rm lumen index --mode new`
-3. New book is immediately available in Claude Desktop
-
-**Daily usage:**
-```bash
-# Start when you want to use Claude Desktop
-docker-compose run --rm lumen start
-
-# Stop when done
 docker-compose run --rm lumen stop
 ```
 
-## Lumen Commands
-
-### Index Books
-
-Index your ebook collection for search:
+### **Docker Compose Commands**
 
 ```bash
-# Index only new books with local embeddings (default)
-docker-compose run --rm lumen index
-
-# Index all books (reindex everything)
-docker-compose run --rm lumen index --mode all
-
-# Use Gemini embeddings instead of local
-docker-compose run --rm lumen index --model gemini
-
-# Combine options
+# Index books (development)
+docker-compose run --rm lumen index --mode all --model local
 docker-compose run --rm lumen index --mode all --model gemini
-```
 
-**Options:**
-- `--mode {new,all}`: 
-  - `new` (default): Only index books that haven't been indexed before
-  - `all`: Reindex all books, including previously indexed ones
-- `--model {local,gemini}`:
-  - `local` (default): Use SentenceTransformers local embeddings (384D)
-  - `gemini`: Use Google Gemini embeddings (768D, requires GEMINI_API_KEY)
-
-### Start Server
-
-Start the MCP server environment for Claude Desktop:
-
-```bash
+# Start MCP server environment
 docker-compose run --rm lumen start
-```
 
-This command:
-- Starts Elasticsearch in Docker
-- Waits for Elasticsearch to be ready
-- Prepares the environment for Claude Desktop to connect
-- Shows next steps for using Claude Desktop
-
-### Stop Server
-
-Stop and clean up the MCP server environment:
-
-```bash
+# Stop and cleanup
 docker-compose run --rm lumen stop
-```
 
-This command:
-- Stops all Docker containers
-- Removes Docker containers completely
-- Cleans up the environment
-
-### Get Help
-
-```bash
+# Get help
 docker-compose run --rm lumen --help
-docker-compose run --rm lumen index --help
 ```
 
-## Typical Workflow
+### **Architecture**
 
-1. **First time setup:**
-   ```bash
-   # Index your books
-   docker-compose run --rm lumen index --mode all
-   
-   # Start the server for Claude Desktop
-   docker-compose run --rm lumen start
-   ```
+- **Lumen CLI** (`lumen.py`) - Unified command tool with Docker lifecycle management
+- **MCP Server** (`src/mcp_server.py`) - Claude Desktop integration
+- **Ebook Processor** (`src/ebook_processor.py`) - Text extraction and embedding generation
+- **Elasticsearch** - Vector database for book chunks and search
+- **Docker Compose** - Development environment orchestration
 
-2. **Adding new books:**
-   ```bash
-   # Add new ebooks to the ebooks/ directory
-   # Index only the new books
-   docker-compose run --rm lumen index --mode new
-   ```
+### **Environment Variables**
 
-3. **Daily usage:**
-   ```bash
-   # Start when you want to use Claude Desktop
-   docker-compose run --rm lumen start
-   
-   # Stop when done
-   docker-compose run --rm lumen stop
-   ```
+- `GEMINI_API_KEY` - Required for Gemini embeddings
+- `ELASTICSEARCH_URL` - Elasticsearch connection (default: http://elasticsearch:9200)
 
-## Environment Variables
-
-- `GEMINI_API_KEY`: Required when using `--model gemini`
-- `ELASTICSEARCH_URL`: Override Elasticsearch URL (default: http://localhost:9200)
-
-## File Support
-
-- **EPUB files**: Full support with metadata extraction
-- **PDF files**: Full support with metadata extraction
-- Both formats support chunking and embedding generation
-
-## Architecture
-
-- **Lumen CLI**: Unified command tool that manages everything
-- **Elasticsearch**: Stores book chunks with vector embeddings
-- **MCP Server**: Claude Desktop connects to search your books
-- **indexed_books.json**: Registry of all your books with metadata
-- **Automatic Cleanup**: All commands handle Docker lifecycle automatically
-
-## Advanced Features
-
-- **Multi-model Support**: Index books with different embedding models simultaneously
-- **Smart Indexing**: Only processes new books by default to save time
-- **Automatic Cleanup**: All operations clean up Docker containers automatically
-- **Universal Search**: MCP server searches across all books regardless of embedding model used
-- **Metadata Tracking**: Tracks embedding model, dimensions, timestamps, and chunk counts
-
-## Embedding Models
+### **Embedding Models**
 
 | Model | Dimensions | Speed | Quality | API Required |
 |-------|------------|-------|---------|--------------|
 | Local (SentenceTransformers) | 384D | Fast | Good | No |
 | Google Gemini | 768D | Slower | Better | Yes (GEMINI_API_KEY) |
 
-## Notes
+### **Development Notes**
 
-- The `lumen start` command prepares the environment but doesn't start the MCP server directly - that's handled by Claude Desktop
-- You can have books indexed with different embedding models simultaneously
-- The MCP server automatically searches across all indexed books regardless of which embedding model was used
-- All Lumen commands handle Docker container lifecycle automatically
-- Use `docker-compose run --rm lumen stop` to clean up when you're done working
+- All commands enforce Docker-only execution for consistency
+- Elasticsearch lifecycle is automatically managed (startup/cleanup)
+- Books are chunked into ~1000 character segments with 200 character overlap
+- Supports both new book indexing and full reindexing
+- MCP server searches across all indexed books regardless of embedding model used
 
-That's it! Drop books in `ebooks/`, run the indexer, search in Claude Desktop.
+### **Building Distribution**
+
+```bash
+# Update install script with your GitHub username
+sed -i 's/yourusername/YOURUSERNAME/g' install.sh
+
+# Test locally
+python3 -m http.server 8000
+curl -sSL http://localhost:8000/install.sh | bash
+
+# Push to GitHub for distribution
+git add .
+git commit -m "Update for distribution"
+git push origin main
+```
+
+---
+
+*Transform your ebook collection into an AI-searchable library! 📚✨*

@@ -33,10 +33,16 @@ echo
 mkdir -p "$EBOOKS_DIR"
 mkdir -p "$LUMEN_DATA_DIR"
 
-# Pull pre-built Lumen Docker image (in production this would be from Docker Hub)
-echo "⬇️  Pulling Lumen Docker image..."
-# For now, we'll build locally (later this would be: docker pull yourusername/lumen:latest)
+# Download Lumen source code
+echo "⬇️  Downloading Lumen source code..."
+TEMP_DIR=$(mktemp -d)
+cd "$TEMP_DIR"
+
+# Download and extract repository
+curl -sSL https://github.com/yourusername/lumen/archive/main.tar.gz | tar -xz --strip-components=1
+
 echo "🔨 Building Lumen Docker image..."
+docker build -t lumen:latest .
 
 # Create temporary docker-compose for installation
 cat > /tmp/lumen-install-compose.yml << 'EOF'
@@ -79,9 +85,9 @@ networks:
     driver: bridge
 EOF
 
-# Build Lumen image
-cd "$(dirname "$0")"
-docker build -t lumen:latest .
+# Clean up temp directory
+cd /tmp
+rm -rf "$TEMP_DIR"
 
 # Create global lumen command that uses Docker
 echo "🔧 Creating global lumen command..."
