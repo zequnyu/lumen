@@ -3,25 +3,16 @@
     "embedding_model": "gemini",
     "model_name": "text-embedding-004",
     "dimensions": 768,
-    "timestamp": "2025-07-05T22:02:18.083798",
-    "chunks": 3,
+    "timestamp": "2025-07-05T23:46:43.774893",
+    "chunks": 369,
     "title": "The Psychology of Money: Timeless Lessons on Wealth, Greed, and Happiness",
     "author": "Morgan Housel"
-  },
-  "/app/ebooks/ Hessler, Peter - Oracle Bones_ a Journey Between Chinas Past And Present (2014, HarperCollins e-Books) - libgen.li.epub": {
-    "embedding_model": "gemini",
-    "model_name": "text-embedding-004",
-    "dimensions": 768,
-    "timestamp": "2025-07-05T22:48:40.707186",
-    "chunks": 1175,
-    "title": "Oracle Bones",
-    "author": "Peter Hessler"
   },
   "/app/ebooks/ Rogan, Eugene - Fall of the Ottomans_ The Great War in the Middle East (Perseus Book Group) - libgen.li.epub": {
     "embedding_model": "local",
     "model_name": "all-MiniLM-L6-v2",
     "dimensions": 384,
-    "timestamp": "2025-07-05T23:18:05.951938",
+    "timestamp": "2025-07-06T01:35:50.777304",
     "chunks": 1292,
     "title": "Fall of the Ottomans : The Great War in the Middle East (9780465056699)",
     "author": "Rogan, Eugene"

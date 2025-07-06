@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from elasticsearch import Elasticsearch
@@ -15,139 +16,168 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class EbookMCPServer:
-    def __init__(self, elasticsearch_url: str = None, index_name: str = "ebooks", model: str = "gemini"):
+    def __init__(self, elasticsearch_url: str = None):
         self.elasticsearch_url = elasticsearch_url or os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
-        self.index_name = index_name
         self.es_client = Elasticsearch([self.elasticsearch_url])
-        self.model = model
         
-        # Initialize embedding model
-        if self.model == "gemini":
-            if not os.getenv("GEMINI_API_KEY"):
-                raise ValueError("GEMINI_API_KEY environment variable is required for Gemini model")
-            self.embedding_model = None
-        elif self.model == "local":
-            self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-        else:
-            raise ValueError(f"Unsupported model: {self.model}")
+        # Use both indices to find all books
+        self.local_index = "ebooks_local"
+        self.gemini_index = "ebooks_gemini"
+        self.all_indices = [self.local_index, self.gemini_index]
         
-    def create_embeddings(self, text: str):
-        """Create embeddings for text using the specified model"""
-        if self.model == "gemini":
-            try:
-                import google.generativeai as genai
-                api_key = os.getenv("GEMINI_API_KEY")
-                if not api_key:
-                    raise ValueError("GEMINI_API_KEY environment variable not set")
-                
-                genai.configure(api_key=api_key)
-                
-                result = genai.embed_content(
-                    model="models/text-embedding-004",
-                    content=text
-                )
-                return result['embedding']
-            except Exception as e:
-                logger.error(f"Gemini embedding failed: {e}")
-                raise
-        elif self.model == "local":
-            return self.embedding_model.encode(text).tolist()
-        else:
-            raise ValueError(f"Unsupported model: {self.model}")
+        # Initialize both embedding models for comprehensive search
+        self.local_model = SentenceTransformer('all-MiniLM-L6-v2')
+        
+        # Try to initialize Gemini if API key is available
+        self.has_gemini = os.getenv("GEMINI_API_KEY") is not None
+        if not self.has_gemini:
+            logger.info("GEMINI_API_KEY not set, will only search local embeddings index")
+        
+    def create_local_embedding(self, text: str):
+        """Create local embedding using SentenceTransformers"""
+        return self.local_model.encode(text).tolist()
+    
+    def create_gemini_embedding(self, text: str):
+        """Create Gemini embedding if available"""
+        if not self.has_gemini:
+            return None
+        
+        try:
+            import google.generativeai as genai
+            api_key = os.getenv("GEMINI_API_KEY")
+            if not api_key:
+                return None
+            
+            genai.configure(api_key=api_key)
+            
+            result = genai.embed_content(
+                model="models/text-embedding-004",
+                content=text
+            )
+            return result['embedding']
+        except Exception as e:
+            logger.warning(f"Gemini embedding failed: {e}")
+            return None
 
     async def search_ebooks(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
-        """Search for relevant ebook content using vector similarity"""
+        """Search for relevant ebook content across all available indices"""
         try:
-            # Create query embedding
-            query_embedding = self.create_embeddings(query)
+            all_results = []
             
-            # Elasticsearch query
-            search_query = {
-                "size": limit,
-                "query": {
-                    "script_score": {
-                        "query": {"match_all": {}},
-                        "script": {
-                            "source": "cosineSimilarity(params.query_vector, 'embeddings') + 1.0",
-                            "params": {"query_vector": query_embedding}
+            # Create embeddings for both models
+            local_embedding = self.create_local_embedding(query)
+            gemini_embedding = self.create_gemini_embedding(query) if self.has_gemini else None
+            
+            # Search local index with local embeddings
+            try:
+                local_query = {
+                    "size": limit,
+                    "query": {
+                        "script_score": {
+                            "query": {"match_all": {}},
+                            "script": {
+                                "source": "cosineSimilarity(params.query_vector, 'embeddings') + 1.0",
+                                "params": {"query_vector": local_embedding}
+                            }
                         }
+                    },
+                    "_source": ["title", "author", "content", "file_path", "file_type"]
+                }
+                
+                response = self.es_client.search(index=self.local_index, body=local_query)
+                for hit in response['hits']['hits']:
+                    source = hit['_source']
+                    all_results.append({
+                        'content': source.get('content', ''),
+                        'title': source.get('title', 'Unknown'),
+                        'author': source.get('author', 'Unknown'),
+                        'file_type': source.get('file_type', 'Unknown'),
+                        'score': hit['_score'],
+                        'source': 'local_embeddings'
+                    })
+            except Exception as e:
+                logger.info(f"Local index search failed (expected if empty): {e}")
+            
+            # Search Gemini index with Gemini embeddings (if available)
+            if gemini_embedding:
+                try:
+                    gemini_query = {
+                        "size": limit,
+                        "query": {
+                            "script_score": {
+                                "query": {"match_all": {}},
+                                "script": {
+                                    "source": "cosineSimilarity(params.query_vector, 'embeddings') + 1.0",
+                                    "params": {"query_vector": gemini_embedding}
+                                }
+                            }
+                        },
+                        "_source": ["title", "author", "content", "file_path", "file_type"]
                     }
-                },
-                "_source": ["title", "author", "content", "file_path", "file_type"]
-            }
+                    
+                    response = self.es_client.search(index=self.gemini_index, body=gemini_query)
+                    for hit in response['hits']['hits']:
+                        source = hit['_source']
+                        all_results.append({
+                            'content': source.get('content', ''),
+                            'title': source.get('title', 'Unknown'),
+                            'author': source.get('author', 'Unknown'),
+                            'file_type': source.get('file_type', 'Unknown'),
+                            'score': hit['_score'],
+                            'source': 'gemini_embeddings'
+                        })
+                except Exception as e:
+                    logger.info(f"Gemini index search failed (expected if empty): {e}")
             
-            response = self.es_client.search(index=self.index_name, body=search_query)
+            # Sort all results by score and deduplicate by (title, author)
+            seen_books = set()
+            unique_results = []
             
-            results = []
-            for hit in response['hits']['hits']:
-                source = hit['_source']
-                results.append({
-                    'content': source.get('content', ''),
-                    'title': source.get('title', 'Unknown'),
-                    'author': source.get('author', 'Unknown'),
-                    'file_type': source.get('file_type', 'Unknown'),
-                    'score': hit['_score']
-                })
+            for result in sorted(all_results, key=lambda x: x['score'], reverse=True):
+                book_key = (result['title'], result['author'])
+                if book_key not in seen_books:
+                    seen_books.add(book_key)
+                    unique_results.append(result)
             
-            return results
+            # Return top results up to limit
+            return unique_results[:limit]
             
         except Exception as e:
             logger.error(f"Error searching ebooks: {str(e)}")
             return []
     
     async def get_book_list(self) -> List[Dict[str, Any]]:
-        """Get list of all books in the database"""
+        """Get list of all books from both indices"""
         try:
-            # Use scroll to efficiently get all unique books
             books_dict = {}
             
-            # Initial search with scroll
+            # Search query to get unique books
             search_query = {
                 "size": 1000,
                 "_source": ["title", "author", "file_type", "total_chunks"],
                 "query": {"match_all": {}}
             }
             
-            response = self.es_client.search(
-                index=self.index_name, 
-                body=search_query,
-                scroll='2m'
-            )
-            
-            scroll_id = response['_scroll_id']
-            hits = response['hits']['hits']
-            
-            # Process initial batch
-            for hit in hits:
-                source = hit['_source']
-                key = (source.get('title', 'Unknown'), source.get('author', 'Unknown'))
-                if key not in books_dict:
-                    books_dict[key] = {
-                        'title': source.get('title', 'Unknown'),
-                        'author': source.get('author', 'Unknown'),
-                        'file_type': source.get('file_type', 'Unknown'),
-                        'chunks': source.get('total_chunks', 0)
-                    }
-            
-            # Continue scrolling until no more hits
-            while len(hits) > 0:
-                response = self.es_client.scroll(scroll_id=scroll_id, scroll='2m')
-                scroll_id = response['_scroll_id']
-                hits = response['hits']['hits']
-                
-                for hit in hits:
-                    source = hit['_source']
-                    key = (source.get('title', 'Unknown'), source.get('author', 'Unknown'))
-                    if key not in books_dict:
-                        books_dict[key] = {
-                            'title': source.get('title', 'Unknown'),
-                            'author': source.get('author', 'Unknown'),
-                            'file_type': source.get('file_type', 'Unknown'),
-                            'chunks': source.get('total_chunks', 0)
-                        }
-            
-            # Clean up scroll
-            self.es_client.clear_scroll(scroll_id=scroll_id)
+            # Search both indices
+            for index_name in self.all_indices:
+                try:
+                    response = self.es_client.search(index=index_name, body=search_query)
+                    
+                    # Process books from this index
+                    for hit in response['hits']['hits']:
+                        source = hit['_source']
+                        key = (source.get('title', 'Unknown'), source.get('author', 'Unknown'))
+                        if key not in books_dict:
+                            books_dict[key] = {
+                                'title': source.get('title', 'Unknown'),
+                                'author': source.get('author', 'Unknown'),
+                                'file_type': source.get('file_type', 'Unknown'),
+                                'total_chunks': source.get('total_chunks', 0),
+                                'index': index_name
+                            }
+                except Exception as e:
+                    logger.info(f"Index {index_name} not available: {e}")
+                    continue
             
             return list(books_dict.values())
             
@@ -169,10 +199,24 @@ class EbookMCPServer:
                 "_source": ["title", "author", "file_type", "content"]
             }
             
-            response = self.es_client.search(index=self.index_name, body=search_query)
+            # Search both indices for comprehensive results
+            indices_to_search = ["ebooks_local"]
+            if self.has_gemini:
+                indices_to_search.append("ebooks_gemini")
             
-            if not response['hits']['hits']:
+            all_hits = []
+            for index_name in indices_to_search:
+                try:
+                    response = self.es_client.search(index=index_name, body=search_query)
+                    all_hits.extend(response['hits']['hits'])
+                except Exception as e:
+                    logger.warning(f"Could not search index {index_name}: {e}")
+            
+            if not all_hits:
                 return {"error": f"Book '{title}' not found"}
+            
+            response = {'hits': {'hits': all_hits}}
+            
             
             # Get book metadata from first hit
             first_hit = response['hits']['hits'][0]['_source']
@@ -196,6 +240,7 @@ class EbookMCPServer:
 
 # Initialize the MCP server
 server = Server("ebook-mcp-server")
+logger.info("Starting MCP server (searches all books from both embedding models)")
 ebook_server = EbookMCPServer()
 
 @server.list_tools()
@@ -297,7 +342,7 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.T
             for book in books:
                 formatted_books.append(
                     f"**{book['title']}** by {book['author']} "
-                    f"({book['file_type']}, {book['chunks']} chunks)"
+                    f"({book['file_type']}, {book['total_chunks']} chunks)"
                 )
             
             return [types.TextContent(
