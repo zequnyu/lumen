@@ -66,6 +66,35 @@ lumen --help              # Show all options
 
 **Note:** `lumen stop` now properly cleans up all Docker containers and resources.
 
+## 🗑️ Uninstall
+
+**Complete Removal (preserves your ebooks):**
+```bash
+curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.sh | bash
+```
+
+**What gets removed:**
+- Lumen command (`/usr/local/bin/lumen`)
+- All Docker containers and images
+- Lumen data directory (`~/.lumen-data`)
+- MCP client configuration
+
+**What's preserved:**
+- Your ebooks in `~/lumen-ebooks/` (safe to keep)
+
+**Alternative manual download:**
+```bash
+# Download and run uninstall script locally
+curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.sh -o uninstall.sh
+chmod +x uninstall.sh
+./uninstall.sh
+```
+
+**To reinstall later:**
+```bash
+curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh | bash
+```
+
 ## 🆘 Troubleshooting
 
 **MCP client not finding books?**
@@ -78,27 +107,7 @@ lumen start
 cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
 ```
 
-**Want to start fresh?**
-```bash
-# Complete uninstall (preserves your ebooks)
-curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.sh | bash
-
-# Then reinstall
-curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh | bash
-```
-
-**Note:** If you encounter issues with the curl install, try downloading and running locally:
-```bash
-# Download and run install script
-curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh -o install.sh
-chmod +x install.sh
-./install.sh
-
-# Download and run uninstall script
-curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.sh -o uninstall.sh
-chmod +x uninstall.sh
-./uninstall.sh
-```
+**Want to start fresh?** See the [Uninstall section](#🗑️-uninstall) above for complete removal and reinstallation.
 
 ## 📁 File Locations
 
