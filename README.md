@@ -6,20 +6,57 @@ Search your ebooks with AI using Claude Desktop's MCP integration.
 
 ## ⚡ Easy Installation (Recommended)
 
-**For end users - one command install:**
+### **Prerequisites**
+- **Docker Desktop** - [Install from docker.com](https://docs.docker.com/get-docker/)
+- **Claude Desktop** - [Download from claude.ai](https://claude.ai/download)
+
+### **Complete Setup (5 minutes)**
+
+**1. Install Lumen (one command):**
 ```bash
 curl -sSL https://raw.githubusercontent.com/your-repo/lumen/main/install.sh | bash
 ```
 
-Then simply:
+**2. Add your ebooks:**
 ```bash
-# Add books to ~/lumen-ebooks/
-lumen index --mode all
-lumen start
-# Use Claude Desktop!
+# Copy your .epub/.pdf files to the ebooks directory
+cp ~/Downloads/*.epub ~/lumen-ebooks/
+cp ~/Downloads/*.pdf ~/lumen-ebooks/
 ```
 
-See [INSTALL.md](INSTALL.md) for the full installation guide.
+**3. Index your books:**
+```bash
+lumen index --mode all
+```
+
+**4. Configure Claude Desktop (IMPORTANT):**
+```bash
+# The install script auto-configures Claude Desktop, but you MUST restart it:
+# 1. Quit Claude Desktop completely (Cmd+Q on Mac, or close completely)
+# 2. Reopen Claude Desktop
+# 3. Lumen MCP server will now be active
+```
+
+**5. Start Lumen:**
+```bash
+lumen start
+```
+
+**6. Use Claude Desktop immediately:**
+Ask Claude about your books: *"What does Morgan Housel say about compound interest?"*
+
+### **Daily Usage**
+```bash
+# Add new books
+cp new-book.epub ~/lumen-ebooks/
+lumen index          # Index new books (fast)
+
+# Use with Claude Desktop  
+lumen start          # Start when needed
+lumen stop           # Stop when done
+```
+
+See [INSTALL.md](INSTALL.md) for detailed installation guide and troubleshooting.
 
 ---
 

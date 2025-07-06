@@ -38,7 +38,16 @@ lumen index --mode all
 lumen start
 ```
 
-**4. Use Claude Desktop:**
+**4. Restart Claude Desktop (CRITICAL):**
+```bash
+# The installer auto-configured Claude Desktop, but you MUST restart it:
+# 1. Quit Claude Desktop completely (Cmd+Q on Mac)
+# 2. Wait 2 seconds  
+# 3. Reopen Claude Desktop
+# 4. Lumen MCP server is now active!
+```
+
+**5. Use Claude Desktop:**
 Open Claude Desktop and start asking questions about your books! 
 
 Example: *"What does Morgan Housel say about compound interest in The Psychology of Money?"*
@@ -101,20 +110,39 @@ lumen index --mode all
 
 **Claude Desktop not finding books?**
 ```bash
-# Restart Claude Desktop after running:
+# 1. Make sure you restarted Claude Desktop after installation
+# 2. Check if Lumen is running:
 lumen start
+
+# 3. Verify Claude Desktop config was created:
+cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
+# Should show "lumen" MCP server
+
+# 4. Try restarting Claude Desktop again (common fix)
+```
+
+**Lumen commands not working?**
+```bash
+# Check if global command exists:
+which lumen
+# Should show: /usr/local/bin/lumen
+
+# If not found, try reinstalling:
+curl -sSL https://raw.githubusercontent.com/your-repo/lumen/main/install.sh | bash
 ```
 
 **Want to start fresh?**
 ```bash
 # Remove everything and reinstall
-rm -rf ~/.lumen ~/lumen-ebooks
+rm -rf ~/.lumen-data ~/lumen-ebooks
+sudo rm /usr/local/bin/lumen
 curl -sSL https://raw.githubusercontent.com/your-repo/lumen/main/install.sh | bash
 ```
 
 **Check what's running:**
 ```bash
 docker ps  # Should show lumen containers when active
+lumen --help  # Should show available commands
 ```
 
 ## 🚀 That's It!
