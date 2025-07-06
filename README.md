@@ -1,6 +1,31 @@
-# Ebook MCP Tool
+# Lumen
 
 Search your ebooks with AI using Claude Desktop's MCP integration.
+
+**🐳 Fully Containerized** - Easy one-command installation with complete Docker isolation.
+
+## ⚡ Easy Installation (Recommended)
+
+**For end users - one command install:**
+```bash
+curl -sSL https://raw.githubusercontent.com/your-repo/lumen/main/install.sh | bash
+```
+
+Then simply:
+```bash
+# Add books to ~/lumen-ebooks/
+lumen index --mode all
+lumen start
+# Use Claude Desktop!
+```
+
+See [INSTALL.md](INSTALL.md) for the full installation guide.
+
+---
+
+## 🛠️ Development Setup
+
+**For developers working on Lumen:**
 
 ## Quick Start
 
