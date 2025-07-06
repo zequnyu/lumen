@@ -82,10 +82,6 @@ bash <(curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.
 **What's preserved:**
 - Your ebooks in `~/lumen-ebooks/` (safe to keep)
 
-**To reinstall later:**
-```bash
-bash <(curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh)
-```
 
 ## 🆘 Troubleshooting
 
