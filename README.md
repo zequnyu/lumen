@@ -1,6 +1,6 @@
 # Lumen
 
-AI-powered ebook search via MCP.
+AI-powered ebook search via MCP. Transform your personal ebook library into an intelligent, searchable knowledge base. Ask natural language questions about your books and get answers with relevant citations.
 
 ## Quick Start
 
@@ -17,14 +17,23 @@ bash <(curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/install.sh
 
 ### 2. Add Books
 
+Copy your .epub/.pdf files to `~/lumen-ebooks/`, then extract text and save vectors to database for AI search:
+
 ```bash
-cp ~/Downloads/*.epub ~/lumen-ebooks/     # Copy your ebooks
-lumen index                               # Index them
+lumen index
 ```
 
 ### 3. Use
 
-Open your MCP client and ask: _"How many books are in my library?"_
+Open your MCP client and try these questions:
+
+- *"How many books are in my library?"*
+- *"What does Cal Newport say about deep work?"*
+- *"Compare the investment strategies mentioned across my finance books"*
+- *"Find all references to artificial intelligence in my collection"*
+- *"Which books discuss productivity techniques?"*
+- *"Summarize the main arguments in [book title]"*
+- *"What are the key takeaways from books by [author name]?"*
 
 ### 4. Uninstall
 
@@ -55,12 +64,12 @@ lumen --help                      # Show all options
 
 ## Features
 
--   **AI-Powered Search** - Ask natural language questions about your books
--   **Multiple Formats** - EPUB and PDF support with metadata extraction
--   **Smart Indexing** - Only processes new books by default
--   **Embedding Models** - Local (fast) or Google Gemini (better quality)
--   **Complete Isolation** - Everything runs in Docker containers
--   **Auto-Configuration** - MCP client setup is automatic
+-   🧠 **AI-Powered Search** - Ask natural language questions about your books
+-   📚 **Multiple Formats** - EPUB and PDF support with metadata extraction
+-   ⚡ **Smart Indexing** - Only processes new books by default
+-   🎯 **Embedding Models** - Local (fast) or Google Gemini (better quality)
+-   🐳 **Complete Isolation** - Everything runs in Docker containers
+-   🔧 **Auto-Configuration** - MCP client setup is automatic
 
 ## Development
 
