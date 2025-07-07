@@ -71,7 +71,7 @@ services:
       - PYTHONPATH=/app
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     env_file:
-      - ${LUMEN_DATA_DIR}/.env
+      - /app/data/.env
     entrypoint: ["python3", "/app/lumen.py"]
     networks:
       - lumen-network
