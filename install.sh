@@ -72,8 +72,6 @@ services:
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - PYTHONPATH=/app
-    env_file:
-      - ${LUMEN_DATA_DIR}/.env
     entrypoint: ["python3", "/app/lumen.py"]
     networks:
       - lumen-network
