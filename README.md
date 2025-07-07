@@ -10,7 +10,7 @@ Search your ebooks with AI using MCP (Model Context Protocol) integration.
 - **Docker Desktop** - [Install from docker.com](https://docs.docker.com/get-docker/)
 - **MCP-Compatible Client** - Such as Claude Desktop, Cline, or other MCP clients
 
-### **Installation (5 minutes)**
+### **Installation**
 
 ```bash
 # 1. Install Lumen
@@ -27,11 +27,9 @@ lumen index --mode all
 # For Claude Desktop: Quit completely (Cmd+Q), then reopen
 # For other MCP clients: Restart according to client documentation
 
-# 5. Start Lumen
-lumen start
-
-# 6. Use your MCP client!
+# 5. Use your MCP client!
 # Ask: "What does Morgan Housel say about compound interest?"
+# Lumen automatically starts when Claude Desktop opens
 ```
 
 ### **Daily Usage**
@@ -41,8 +39,8 @@ cp new-book.epub ~/lumen-ebooks/
 lumen index          # Index new books (fast)
 
 # Use with your MCP client
-lumen start          # Start when needed
-lumen stop           # Stop when done
+# Lumen starts automatically when you open Claude Desktop
+lumen stop           # Stop and cleanup when completely done
 ```
 
 ## 📚 Features
@@ -59,12 +57,11 @@ lumen stop           # Stop when done
 ```bash
 lumen index --mode all     # Index all books
 lumen index --model gemini # Use Gemini embeddings (requires GEMINI_API_KEY)
-lumen start               # Start MCP server
 lumen stop                # Stop and cleanup all containers
 lumen --help              # Show all options
 ```
 
-**Note:** `lumen stop` now properly cleans up all Docker containers and resources.
+**Note:** Lumen automatically starts when you open Claude Desktop. Use `lumen stop` only when you want to completely shut down all containers.
 
 ## 🗑️ Uninstall
 
@@ -88,8 +85,8 @@ bash <(curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.
 **MCP client not finding books?**
 ```bash
 # 1. Make sure you restarted your MCP client after installation
-# 2. Check if Lumen is running:
-lumen start
+# 2. Check if you have indexed books:
+lumen index --mode all
 
 # 3. Verify your MCP client configuration has been updated
 # Check your MCP client documentation for config file location
