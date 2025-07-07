@@ -46,8 +46,9 @@ bash <(curl -sSL https://raw.githubusercontent.com/zequnyu/lumen/main/uninstall.
 ```bash
 lumen index                       # Index new books only (default)
 lumen index --mode all            # Index all books (full reindex)
-lumen index --model gemini        # Use Gemini embeddings (requires GEMINI_API_KEY)
+lumen index --model gemini        # Use Gemini embeddings (requires API key)
 lumen index --mode all --model gemini  # Full reindex with Gemini
+lumen setkey gemini YOUR_API_KEY  # Set Gemini API key
 lumen stop                        # Stop all containers
 lumen --help                      # Show all options
 ```
@@ -61,6 +62,12 @@ lumen --help                      # Show all options
 
 -   `local` (default) - Fast SentenceTransformers model
 -   `gemini` - Higher quality Google Gemini embeddings
+
+**Setting Up Gemini Embeddings:**
+
+1. Get your API key at: https://makersuite.google.com/app/apikey
+2. Set the key: `lumen setkey gemini YOUR_API_KEY`
+3. Use Gemini: `lumen index --model gemini`
 
 ## Features
 
@@ -108,7 +115,7 @@ docker ps | grep lumen
 
 **Environment Variables:**
 
--   `GEMINI_API_KEY` - Required for Gemini embeddings
+-   `GEMINI_API_KEY` - Set via `lumen setkey gemini YOUR_API_KEY`
 -   `ELASTICSEARCH_URL` - Elasticsearch connection (default: http://elasticsearch:9200)
 
 **Embedding Models:**
