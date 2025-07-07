@@ -78,10 +78,12 @@ class LumenCLI:
     def _cleanup_elasticsearch(self) -> None:
         """Clean up all Lumen-related containers"""
         print("🛑 Stopping and removing all Lumen containers...")
-        # Stop all lumen-related containers regardless of how they were started
+        # Stop containers directly by name patterns, more robust than compose file
         commands = [
-            ("docker-compose -f /tmp/lumen-install-compose.yml -p lumen down --remove-orphans", "Stopping all Lumen containers"),
+            ("docker stop lumen-elasticsearch-1 2>/dev/null || true", "Stopping Elasticsearch container"),
+            ("docker rm lumen-elasticsearch-1 2>/dev/null || true", "Removing Elasticsearch container"),
             ("docker volume rm lumen_elasticsearch_data 2>/dev/null || true", "Removing Elasticsearch data volume"),
+            ("docker network rm lumen_lumen-network 2>/dev/null || true", "Removing Lumen network"),
         ]
         
         for command, description in commands:
