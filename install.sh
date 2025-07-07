@@ -33,6 +33,9 @@ echo
 mkdir -p "$EBOOKS_DIR"
 mkdir -p "$LUMEN_DATA_DIR"
 
+# Create empty .env file if it doesn't exist (needed for docker-compose)
+touch "$LUMEN_DATA_DIR/.env"
+
 # Pull pre-built Lumen Docker image
 echo "⬇️  Pulling Lumen Docker image..."
 docker pull zequnyu/lumen:latest
@@ -71,7 +74,7 @@ services:
       - PYTHONPATH=/app
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     env_file:
-      - /app/data/.env
+      - ${LUMEN_DATA_DIR}/.env
     entrypoint: ["python3", "/app/lumen.py"]
     networks:
       - lumen-network

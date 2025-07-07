@@ -33,8 +33,6 @@ services:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - PYTHONPATH=/app
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-    env_file:
-      - ./data/.env
     networks:
       - ebook-network
 
@@ -51,8 +49,6 @@ services:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - PYTHONPATH=/app
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-    env_file:
-      - ./data/.env
     entrypoint: ["python3", "/app/lumen.py"]
     networks:
       - ebook-network

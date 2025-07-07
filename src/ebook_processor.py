@@ -26,6 +26,7 @@ class EbookProcessor:
         # Set embedding model
         self.model = model
         
+        
         # Set index name based on model if not specified
         if index_name is None:
             self.index_name = f"ebooks_{self.model}"
