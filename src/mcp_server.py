@@ -16,7 +16,21 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class EbookMCPServer:
+    def _load_env_file(self):
+        """Load environment variables from .env file if it exists"""
+        env_file = Path("/app/data/.env")
+        if env_file.exists():
+            with open(env_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, value = line.split('=', 1)
+                        os.environ[key] = value
+
     def __init__(self, elasticsearch_url: str = None):
+        # Load environment variables from .env file first
+        self._load_env_file()
+        
         self.elasticsearch_url = elasticsearch_url or os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
         self.es_client = Elasticsearch([self.elasticsearch_url])
         
