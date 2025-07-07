@@ -26,19 +26,23 @@ fi
 echo "🧹 Starting uninstall process..."
 echo
 
-# Stop any running Lumen containers
-echo "🛑 Stopping Lumen containers..."
-docker-compose -f /tmp/lumen-install-compose.yml -p lumen down --remove-orphans 2>/dev/null || true
+# Stop any running Lumen containers using lumen stop
+echo "🛑 Stopping Lumen containers and cleaning up..."
+if command -v lumen &> /dev/null; then
+    lumen stop 2>/dev/null || true
+else
+    echo "ℹ️  Lumen command not found, manually cleaning containers..." >&2
+    docker stop lumen-elasticsearch-1 2>/dev/null || true
+    docker rm lumen-elasticsearch-1 2>/dev/null || true
+    docker volume rm lumen_elasticsearch_data 2>/dev/null || true
+    docker network rm lumen_lumen-network 2>/dev/null || true
+fi
 
 # Remove Docker images
 echo "🐳 Removing Docker images..."
 docker rmi lumen:latest 2>/dev/null || true
 docker rmi zequnyu/lumen:latest 2>/dev/null || true
 docker rmi docker.elastic.co/elasticsearch/elasticsearch:8.11.0 2>/dev/null || true
-
-# Remove Docker volumes
-echo "📦 Removing Docker volumes..."
-docker volume rm lumen_elasticsearch_data 2>/dev/null || true
 
 # Remove global lumen command
 echo "🗑️  Removing lumen command..."
