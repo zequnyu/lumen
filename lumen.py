@@ -21,12 +21,13 @@ class LumenCLI:
     def __init__(self):
         self.project_root = Path(__file__).parent
         self.in_docker = os.path.exists('/.dockerenv')
+        self.env_file = Path("/app/data/.env")
         
         # Ensure we're running inside Docker
         if not self.in_docker:
             print("❌ Error: Lumen must be run via Docker Compose")
             print("📋 Use: docker-compose run --rm lumen [command]")
-            print("📋 Available commands: index, start, stop")
+            print("📋 Available commands: index, start, stop, setkey")
             sys.exit(1)
         
     def run_command(self, command: str, description: str, capture_output: bool = False) -> bool | str:
@@ -108,6 +109,10 @@ class LumenCLI:
         print("📚 Starting ebook indexing with automatic cleanup...")
         print(f"📚 Indexing books with mode: {mode}, model: {model}")
         
+        # Validate Gemini API key if using Gemini model
+        if not self._validate_gemini_requirements(model):
+            return False
+        
         # Start Elasticsearch and wait for it to be ready
         if not self._start_elasticsearch():
             return False
@@ -160,6 +165,61 @@ class LumenCLI:
         print("\n✅ Lumen environment stopped and cleaned up!")
         return True
 
+    def set_api_key(self, key_type: str, api_key: str) -> bool:
+        """Set API key for specified service"""
+        if key_type != "gemini":
+            print(f"❌ Error: Unknown key type '{key_type}'")
+            print("Available key types: gemini")
+            return False
+        
+        # Ensure data directory exists
+        self.env_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Read existing env file if it exists
+        env_vars = {}
+        if self.env_file.exists():
+            with open(self.env_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, value = line.split('=', 1)
+                        env_vars[key] = value
+        
+        # Set the API key
+        env_vars['GEMINI_API_KEY'] = api_key
+        
+        # Write back to file
+        with open(self.env_file, 'w') as f:
+            for key, value in env_vars.items():
+                f.write(f"{key}={value}\n")
+        
+        print("✅ Gemini API key saved successfully")
+        print("📋 You can now use: lumen index --model gemini")
+        return True
+
+    def check_gemini_key(self) -> bool:
+        """Check if Gemini API key is set"""
+        if not self.env_file.exists():
+            return False
+        
+        with open(self.env_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('GEMINI_API_KEY=') and len(line) > 15:
+                    return True
+        return False
+
+    def _validate_gemini_requirements(self, model: str) -> bool:
+        """Validate Gemini API key is set when using Gemini model"""
+        if model == "gemini" and not self.check_gemini_key():
+            print("❌ Error: Gemini API key not set")
+            print("📋 To use Gemini embeddings, first set your API key:")
+            print("   lumen setkey gemini YOUR_API_KEY")
+            print("")
+            print("💡 Get your API key at: https://makersuite.google.com/app/apikey")
+            return False
+        return True
+
 
 def main():
     parser = argparse.ArgumentParser(description="Lumen CLI - Ebook MCP server management tool")
@@ -179,6 +239,11 @@ def main():
     # Stop command
     subparsers.add_parser('stop', help='Stop and clean up MCP server environment')
     
+    # Setkey command
+    setkey_parser = subparsers.add_parser('setkey', help='Set API keys for external services')
+    setkey_parser.add_argument('service', choices=['gemini'], help='Service to set API key for')
+    setkey_parser.add_argument('key', help='API key value')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -194,6 +259,8 @@ def main():
             success = cli.start_server()
         elif args.command == 'stop':
             success = cli.stop_server()
+        elif args.command == 'setkey':
+            success = cli.set_api_key(args.service, args.key)
         else:
             parser.print_help()
             return

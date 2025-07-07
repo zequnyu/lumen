@@ -33,7 +33,13 @@ class EbookProcessor:
             self.index_name = index_name
             
         if self.model == "gemini" and not os.getenv("GEMINI_API_KEY"):
-            raise ValueError("GEMINI_API_KEY environment variable is required for Gemini model")
+            raise ValueError(
+                "❌ Error: Gemini API key not set\n"
+                "📋 To use Gemini embeddings, first set your API key:\n"
+                "   lumen setkey gemini YOUR_API_KEY\n"
+                "\n"
+                "💡 Get your API key at: https://makersuite.google.com/app/apikey"
+            )
         
         # Initialize embedding model
         if self.model == "local":
