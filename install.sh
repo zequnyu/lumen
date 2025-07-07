@@ -72,7 +72,6 @@ services:
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - PYTHONPATH=/app
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
     env_file:
       - ${LUMEN_DATA_DIR}/.env
     entrypoint: ["python3", "/app/lumen.py"]
