@@ -76,12 +76,12 @@ class LumenCLI:
         return True
 
     def _cleanup_elasticsearch(self) -> None:
-        """Clean up Elasticsearch container"""
-        print("🛑 Stopping and removing Elasticsearch container...")
-        # Use docker-compose to properly stop the services
+        """Clean up all Lumen-related containers"""
+        print("🛑 Stopping and removing all Lumen containers...")
+        # Stop all lumen-related containers regardless of how they were started
         commands = [
-            ("docker-compose -f /tmp/lumen-install-compose.yml -p lumen stop elasticsearch", "Stopping Elasticsearch container"),
-            ("docker-compose -f /tmp/lumen-install-compose.yml -p lumen rm -f elasticsearch", "Removing Elasticsearch container"),
+            ("docker-compose -f /tmp/lumen-install-compose.yml -p lumen down --remove-orphans", "Stopping all Lumen containers"),
+            ("docker volume rm lumen_elasticsearch_data 2>/dev/null || true", "Removing Elasticsearch data volume"),
         ]
         
         for command, description in commands:
@@ -125,13 +125,11 @@ class LumenCLI:
         
         success = self.run_command(command, f"Indexing books with {mode} mode and {model} model")
         
-        # Always clean up, regardless of success or failure
-        self._cleanup_elasticsearch()
-        
         if success:
-            print("✅ Indexing completed successfully and cleanup done!")
+            print("✅ Indexing completed successfully!")
+            print("📋 Elasticsearch container left running for MCP server")
         else:
-            print("❌ Indexing failed but cleanup completed")
+            print("❌ Indexing failed")
         
         return success
 
