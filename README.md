@@ -7,7 +7,7 @@ AI-powered ebook search via MCP. Transform your personal ebook library into an i
 **Prerequisites:**
 
 -   [Docker Desktop](https://docs.docker.com/get-docker/)
--   MCP client ([Claude Desktop](https://claude.ai/download), Cline, etc.)
+-   [Claude Desktop](https://claude.ai/download)
 
 ### 1. Install
 
@@ -25,7 +25,7 @@ lumen index
 
 ### 3. Use
 
-Open your MCP client and try these questions:
+Open Claude Desktop and try these questions:
 
 - *"How many books are in my library?"*
 - *"What does Cal Newport say about deep work?"*
