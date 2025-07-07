@@ -134,21 +134,21 @@ LUMEN_DATA_DIR="$LUMEN_DATA_DIR"
 
 # Check if Elasticsearch is already running, if not start it
 if ! curl -s http://localhost:9200/_cluster/health > /dev/null 2>&1; then
-    echo "Starting Elasticsearch..."
+    echo "Starting Elasticsearch..." >&2
     LUMEN_EBOOKS_DIR="\$EBOOKS_DIR" LUMEN_DATA_DIR="\$LUMEN_DATA_DIR" \\
-    docker-compose -f /tmp/lumen-install-compose.yml -p lumen up -d elasticsearch
+    docker-compose -f /tmp/lumen-install-compose.yml -p lumen up -d elasticsearch >&2
     
     # Wait for Elasticsearch to be ready
-    echo "Waiting for Elasticsearch to be ready..."
+    echo "Waiting for Elasticsearch to be ready..." >&2
     for i in {1..30}; do
         if curl -s http://localhost:9200/_cluster/health > /dev/null 2>&1; then
-            echo "Elasticsearch is ready"
+            echo "Elasticsearch is ready" >&2
             break
         fi
         sleep 2
     done
 else
-    echo "Elasticsearch is already running"
+    echo "Elasticsearch is already running" >&2
 fi
 
 # Start MCP server
